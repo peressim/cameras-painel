@@ -1,0 +1,9 @@
+{
+  "name": "cameras-painel-florestal",
+  "version": "1.0.0",
+  "description": "Painel de monitoramento de câmeras veiculares JC400 - IoT Hub",
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}
