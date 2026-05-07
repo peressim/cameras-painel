@@ -6,7 +6,7 @@
  * Necessário porque o browser bloqueia chamadas diretas cross-origin (CORS).
  */
 
-const TURBOHIVE_BASE = 'http://turbohive.ai';
+const TURBOHIVE_BASE = 'https://turbohive.ai';
 
 export default async (request) => {
   if (request.method === 'OPTIONS') {
