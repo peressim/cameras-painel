@@ -3,487 +3,213 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monitoramento de Frotas Florestal</title>
+  <title>Monitoramento Florestal — TurboHive</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flv.js/1.6.2/flv.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg:        #0b1220;
-      --surface:   #131f35;
-      --card:      #1a2944;
-      --border:    #243556;
-      --accent:    #2563eb;
-      --green:     #22c55e;
-      --red:       #ef4444;
-      --orange:    #f97316;
-      --yellow:    #eab308;
-      --text:      #e2e8f0;
-      --muted:     #64748b;
-      --sidebar-w: 260px;
+      --bg:      #0b1220;
+      --surface: #131f35;
+      --card:    #1a2944;
+      --border:  #243556;
+      --accent:  #2563eb;
+      --green:   #22c55e;
+      --red:     #ef4444;
+      --orange:  #f97316;
+      --text:    #e2e8f0;
+      --muted:   #64748b;
+      --sidebar-w: 264px;
     }
-
     html, body { height: 100%; }
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; overflow: hidden; }
 
-    /* ── HEADER ── */
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
-      height: 56px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-      z-index: 10;
-    }
-    .logo { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 700; }
-    .logo span { font-size: 22px; }
+    /* HEADER */
+    header { display: flex; align-items: center; justify-content: space-between; padding: 0 20px; height: 56px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .logo { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; }
+    .logo-badge { background: var(--accent); color: white; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; letter-spacing: .5px; }
     .header-right { display: flex; align-items: center; gap: 10px; }
-    .badge-alert {
-      background: var(--red);
-      color: white;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 7px;
-      display: none;
-    }
-    .badge-alert.visible { display: inline-block; }
+    .user-pill { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--muted); display: none; }
+    .user-pill.visible { display: block; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 5px; }
+    .status-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
 
-    /* ── LAYOUT ── */
-    .layout {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
+    /* LAYOUT */
+    .layout { display: flex; flex: 1; overflow: hidden; }
 
-    /* ── SIDEBAR ── */
-    aside {
-      width: var(--sidebar-w);
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    .sidebar-title {
-      padding: 14px 16px 10px;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .8px;
-      color: var(--muted);
-    }
-    .vehicle-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0 8px;
-    }
-    .vehicle-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-bottom: 2px;
-      transition: background .15s;
-      position: relative;
-    }
+    /* SIDEBAR */
+    aside { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+    .sidebar-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .sidebar-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
+    .vehicle-list { flex: 1; overflow-y: auto; padding: 6px 8px; }
+    .vehicle-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; cursor: pointer; margin-bottom: 2px; transition: background .15s; position: relative; }
     .vehicle-item:hover { background: var(--card); }
     .vehicle-item.active { background: var(--accent); }
-    .vehicle-icon { font-size: 20px; flex-shrink: 0; }
+    .vehicle-icon { font-size: 18px; flex-shrink: 0; }
     .vehicle-info { flex: 1; min-width: 0; }
     .vehicle-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .vehicle-imei { font-size: 10px; color: var(--muted); font-family: monospace; }
-    .vehicle-item.active .vehicle-imei { color: rgba(255,255,255,.6); }
-    .vehicle-del {
-      opacity: 0;
-      background: rgba(239,68,68,.2);
-      border: none;
-      color: var(--red);
-      border-radius: 4px;
-      padding: 2px 5px;
-      cursor: pointer;
-      font-size: 12px;
-      transition: opacity .15s;
-    }
+    .vehicle-sub { font-size: 10px; color: var(--muted); font-family: monospace; }
+    .vehicle-item.active .vehicle-sub { color: rgba(255,255,255,.55); }
+    .online-badge { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; flex-shrink: 0; }
+    .online-badge.on  { background: rgba(34,197,94,.2);  color: var(--green); }
+    .online-badge.off { background: rgba(100,116,139,.2); color: var(--muted); }
+    .online-badge.idle { background: rgba(234,179,8,.2); color: #eab308; }
+    .vehicle-del { opacity: 0; background: rgba(239,68,68,.15); border: none; color: var(--red); border-radius: 4px; padding: 2px 5px; cursor: pointer; font-size: 11px; transition: opacity .15s; }
     .vehicle-item:hover .vehicle-del { opacity: 1; }
-    .dot-online {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--muted);
-      flex-shrink: 0;
-    }
-    .dot-online.streaming { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .sidebar-actions { padding: 10px; display: flex; gap: 6px; flex-direction: column; border-top: 1px solid var(--border); }
 
-    .add-vehicle-btn {
-      margin: 10px;
-      padding: 9px;
-      background: rgba(37,99,235,.15);
-      border: 1px dashed var(--accent);
-      border-radius: 8px;
-      color: var(--accent);
-      font-size: 13px;
-      cursor: pointer;
-      text-align: center;
-      transition: background .15s;
-    }
-    .add-vehicle-btn:hover { background: rgba(37,99,235,.25); }
-
-    /* ── MAIN ── */
-    main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    /* ── TABS ── */
-    .tabs {
-      display: flex;
-      gap: 4px;
-      padding: 12px 20px 0;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-    }
-    .tab {
-      padding: 8px 18px;
-      border-radius: 8px 8px 0 0;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      color: var(--muted);
-      border: 1px solid transparent;
-      border-bottom: none;
-      transition: all .15s;
-      background: transparent;
-      position: relative;
-    }
+    /* MAIN */
+    main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .tabs { display: flex; gap: 2px; padding: 12px 20px 0; border-bottom: 1px solid var(--border); background: var(--surface); }
+    .tab { padding: 8px 18px; border-radius: 8px 8px 0 0; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--muted); border: 1px solid transparent; border-bottom: none; transition: all .15s; background: transparent; }
     .tab:hover { color: var(--text); }
-    .tab.active {
-      background: var(--bg);
-      color: var(--text);
-      border-color: var(--border);
-      border-bottom-color: var(--bg);
-    }
-    .tab-badge {
-      background: var(--red);
-      color: white;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 1px 5px;
-      border-radius: 999px;
-      margin-left: 4px;
-    }
-
-    /* ── TAB PANELS ── */
+    .tab.active { background: var(--bg); color: var(--text); border-color: var(--border); border-bottom-color: var(--bg); }
+    .tab-badge { background: var(--red); color: white; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 999px; margin-left: 4px; }
     .tab-panels { flex: 1; overflow: hidden; position: relative; }
-    .panel {
-      position: absolute; inset: 0;
-      display: none;
-      overflow-y: auto;
-      padding: 20px;
-    }
+    .panel { position: absolute; inset: 0; display: none; overflow-y: auto; padding: 20px; }
     .panel.active { display: flex; flex-direction: column; gap: 16px; }
 
-    /* ── LIVE PANEL ── */
-    .no-vehicle-msg {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: var(--muted);
-      gap: 12px;
-      font-size: 15px;
-    }
-    .no-vehicle-msg .icon { font-size: 48px; }
-
-    .live-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .live-vehicle-name { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-    .live-controls { display: flex; gap: 8px; }
-
-    .cam-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    @media (max-width: 900px) { .cam-grid { grid-template-columns: 1fr; } }
-
-    .cam-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    .cam-card.full { grid-column: 1 / -1; }
-    .cam-label {
-      padding: 8px 14px;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .cam-label .live-pill {
-      background: var(--red);
-      color: white;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 4px;
-      display: none;
-    }
-    .cam-label .live-pill.on { display: inline-block; animation: blink 1.5s infinite; }
-    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
-
-    .cam-video-wrap {
-      background: #000;
-      aspect-ratio: 16/9;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+    /* LIVE PANEL */
+    .no-vehicle-msg { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); gap: 10px; font-size: 14px; }
+    .no-vehicle-msg .big-icon { font-size: 48px; }
+    .live-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .live-title { display: flex; align-items: center; gap: 10px; }
+    .live-title h2 { font-size: 17px; font-weight: 700; }
+    .live-controls { display: flex; gap: 8px; align-items: center; }
+    .cam-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media(max-width:900px){ .cam-grid{ grid-template-columns:1fr; } }
+    .cam-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .cam-label { padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .live-pill { background: var(--red); color: white; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px; display: none; }
+    .live-pill.on { display: inline-block; animation: blink 1.4s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.45} }
+    .cam-video-wrap { background: #000; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; position: relative; }
     video { width: 100%; height: 100%; }
-    .cam-placeholder {
-      color: var(--muted);
-      font-size: 13px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
-    .cam-placeholder .cam-icon { font-size: 40px; }
+    .cam-placeholder { color: var(--muted); font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 12px; }
+    .cam-placeholder .cam-icon { font-size: 36px; }
+    .stream-info { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 11px; color: var(--muted); display: none; }
+    .stream-info code { font-family: monospace; color: var(--text); word-break: break-all; }
 
-    /* ── BUTTONS ── */
-    .btn {
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      transition: all .15s;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .btn-green { background: var(--green); color: #000; }
+    /* ALERTS PANEL */
+    .panel-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; flex-shrink: 0; }
+    .panel-toolbar h2 { font-size: 16px; font-weight: 700; }
+    .filter-row { display: flex; gap: 6px; align-items: center; }
+    .filter-btn { padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all .15s; }
+    .filter-btn:hover, .filter-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+    .alert-list { display: flex; flex-direction: column; gap: 8px; }
+    .alert-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; display: flex; align-items: flex-start; gap: 12px; transition: border-color .15s; }
+    .alert-card:hover { border-color: var(--accent); }
+    .alert-card.unread { border-left: 3px solid var(--red); }
+    .alert-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+    .alert-body { flex: 1; min-width: 0; }
+    .alert-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+    .alert-meta { font-size: 11px; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+    .alert-attachments { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .attach-thumb { width: 64px; height: 48px; border-radius: 5px; overflow: hidden; background: #000; border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: border-color .15s; }
+    .attach-thumb:hover { border-color: var(--accent); }
+    .attach-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .alert-actions { display: flex; gap: 6px; align-items: flex-start; flex-wrap: wrap; }
+    .alert-level { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+    .level-critical { background: rgba(239,68,68,.2); color: var(--red); border: 1px solid var(--red); }
+    .level-warning  { background: rgba(249,115,22,.2); color: var(--orange); border: 1px solid var(--orange); }
+    .level-info     { background: rgba(37,99,235,.15); color: #60a5fa; border: 1px solid #60a5fa; }
+
+    /* HISTORY PANEL */
+    .history-form { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .inp { background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 7px 12px; font-size: 13px; }
+    .inp:focus { outline: none; border-color: var(--accent); }
+    .file-list { display: flex; flex-direction: column; gap: 8px; }
+    .file-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+    .file-icon { font-size: 22px; }
+    .file-info { flex: 1; }
+    .file-name { font-size: 12px; font-weight: 600; font-family: monospace; }
+    .file-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* BUTTONS */
+    .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .btn-green  { background: var(--green); color: #000; }
     .btn-green:hover { filter: brightness(1.1); }
-    .btn-red { background: var(--red); color: white; }
+    .btn-red    { background: var(--red); color: white; }
     .btn-red:hover { filter: brightness(1.1); }
-    .btn-ghost {
-      background: var(--card);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
+    .btn-ghost  { background: var(--card); color: var(--text); border: 1px solid var(--border); }
     .btn-ghost:hover { background: var(--border); }
     .btn-accent { background: var(--accent); color: white; }
     .btn-accent:hover { filter: brightness(1.15); }
+    .btn-sm { padding: 5px 11px; font-size: 12px; }
     .btn:disabled { opacity: .4; cursor: not-allowed; }
 
-    /* ── ALERTS PANEL ── */
-    .alerts-toolbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
-    .alerts-toolbar h2 { font-size: 16px; font-weight: 700; }
-    .alerts-filter { display: flex; gap: 6px; }
-    .filter-btn {
-      padding: 5px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all .15s;
-    }
-    .filter-btn:hover, .filter-btn.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: white;
-    }
-
-    .alert-list { display: flex; flex-direction: column; gap: 8px; }
-    .alert-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 16px;
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      transition: border-color .15s;
-    }
-    .alert-card:hover { border-color: var(--accent); }
-    .alert-icon { font-size: 24px; flex-shrink: 0; }
-    .alert-body { flex: 1; min-width: 0; }
-    .alert-title { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
-    .alert-meta { font-size: 12px; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; }
-    .alert-actions { display: flex; gap: 6px; align-items: center; }
-    .alert-level {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 4px;
-    }
-    .level-critical { background: rgba(239,68,68,.2); color: var(--red); border: 1px solid var(--red); }
-    .level-warning  { background: rgba(249,115,22,.2); color: var(--orange); border: 1px solid var(--orange); }
-    .level-info     { background: rgba(37,99,235,.2);  color: #60a5fa; border: 1px solid #60a5fa; }
-
-    .alert-card.unread { border-left: 3px solid var(--red); }
-
-    /* ── HISTORY PANEL ── */
-    .history-toolbar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      flex-shrink: 0;
-    }
-    .history-toolbar h2 { font-size: 16px; font-weight: 700; }
-    .inp {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      padding: 7px 12px;
-      font-size: 13px;
-    }
-    .inp:focus { outline: none; border-color: var(--accent); }
-    select.inp option { background: var(--card); }
-
-    .file-list { display: flex; flex-direction: column; gap: 8px; }
-    .file-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .file-icon { font-size: 22px; }
-    .file-info { flex: 1; }
-    .file-name { font-size: 13px; font-weight: 600; font-family: monospace; }
-    .file-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .file-actions { display: flex; gap: 6px; }
-
-    /* ── MODALS ── */
-    .modal-overlay {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,.7);
-      z-index: 100;
-      align-items: center;
-      justify-content: center;
-    }
+    /* MODALS */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 100; align-items: center; justify-content: center; }
     .modal-overlay.open { display: flex; }
-    .modal {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 24px;
-      width: 480px;
-      max-width: 95vw;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-    .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
-    .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; width: 460px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
+    .modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 18px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .5px; }
     .form-group .inp { width: 100%; }
     .form-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
-    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
 
-    /* ── SPINNER / STATES ── */
-    .spinner {
-      width: 20px; height: 20px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin .8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    /* LOGIN SCREEN */
+    #loginScreen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 200; }
+    .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 380px; max-width: 95vw; }
+    .login-box h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .login-box p { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+    .login-error { background: rgba(239,68,68,.1); border: 1px solid var(--red); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--red); margin-bottom: 14px; display: none; }
 
-    .empty-state {
-      text-align: center;
-      padding: 48px 20px;
-      color: var(--muted);
-    }
+    /* MISC */
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
     .empty-state .e-icon { font-size: 40px; margin-bottom: 12px; }
     .empty-state p { font-size: 14px; }
-
-    /* ── TOAST ── */
-    #toast {
-      position: fixed;
-      bottom: 24px; right: 24px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 12px 20px;
-      border-radius: 10px;
-      font-size: 14px;
-      z-index: 999;
-      opacity: 0;
-      transform: translateY(10px);
-      transition: all .3s;
-      max-width: 320px;
-    }
+    .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-row { display: flex; align-items: center; gap: 10px; padding: 20px; color: var(--muted); font-size: 13px; }
+    #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 11px 18px; border-radius: 10px; font-size: 13px; z-index: 999; opacity: 0; transform: translateY(10px); transition: all .3s; max-width: 320px; }
     #toast.show { opacity: 1; transform: translateY(0); }
     #toast.success { border-color: var(--green); }
     #toast.error   { border-color: var(--red); }
-
-    /* ── SCROLLBAR ── */
-    ::-webkit-scrollbar { width: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-    /* ── CONFIG STATUS ── */
-    .config-status {
-      padding: 6px 14px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-    .config-status.ok { background: rgba(34,197,94,.15); color: var(--green); }
-    .config-status.notok { background: rgba(239,68,68,.15); color: var(--red); }
+    ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    select.inp option { background: var(--card); }
+    .channel-selector { display: flex; gap: 6px; }
+    .ch-btn { padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all .15s; }
+    .ch-btn:hover, .ch-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
   </style>
 </head>
 <body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <h1>🎥 Monitoramento Florestal</h1>
+    <p>Entre com sua conta TurboHive para acessar o painel</p>
+    <div class="login-error" id="loginError"></div>
+    <div class="form-group">
+      <label>E-mail TurboHive</label>
+      <input class="inp" id="loginEmail" type="email" placeholder="seu@email.com" style="width:100%">
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input class="inp" id="loginPassword" type="password" placeholder="••••••••" style="width:100%">
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:4px">
+      <input type="checkbox" id="rememberMe" checked>
+      <label for="rememberMe" style="font-size:12px; color:var(--muted); cursor:pointer">Lembrar credenciais</label>
+    </div>
+    <button class="btn btn-accent" id="btnLogin" style="width:100%; margin-top:18px; justify-content:center" onclick="doLogin()">
+      Entrar
+    </button>
+  </div>
+</div>
 
 <!-- HEADER -->
 <header>
   <div class="logo">
     <span>🎥</span>
     <span>Monitoramento Florestal</span>
+    <span class="logo-badge">TurboHive</span>
   </div>
   <div class="header-right">
-    <span id="configStatus" class="config-status notok">⚠ Sem configuração</span>
-    <span id="alertBadge" class="badge-alert">0</span>
-    <button class="btn btn-ghost" onclick="openModal('settingsModal')">⚙ Configurações</button>
+    <span class="user-pill" id="userPill"><span class="status-dot online"></span><span id="userEmail">—</span></span>
+    <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sair</button>
   </div>
 </header>
 
@@ -492,354 +218,384 @@
 
   <!-- SIDEBAR -->
   <aside>
-    <div class="sidebar-title">Veículos</div>
-    <div class="vehicle-list" id="vehicleList">
-      <div class="empty-state" style="padding:24px 12px">
-        <div class="e-icon">🚛</div>
-        <p style="font-size:12px">Adicione veículos pelo botão abaixo</p>
-      </div>
+    <div class="sidebar-header">
+      <span class="sidebar-title">Veículos</span>
+      <button class="btn btn-ghost btn-sm" onclick="loadDevices()" title="Recarregar da API">↻</button>
     </div>
-    <button class="add-vehicle-btn" onclick="openModal('addVehicleModal')">+ Adicionar Veículo</button>
+    <div class="vehicle-list" id="vehicleList">
+      <div class="loading-row"><div class="spinner"></div> Carregando...</div>
+    </div>
+    <div class="sidebar-actions">
+      <button class="btn btn-ghost btn-sm" style="justify-content:center" onclick="openModal('addVehicleModal')">+ Adicionar por IMEI</button>
+    </div>
   </aside>
 
   <!-- MAIN -->
   <main>
-    <!-- TABS -->
     <div class="tabs">
       <button class="tab active" data-tab="live" onclick="switchTab('live')">📹 Ao Vivo</button>
       <button class="tab" data-tab="alerts" onclick="switchTab('alerts')">
-        🔔 Alertas
-        <span class="tab-badge" id="alertTabBadge" style="display:none">0</span>
+        🔔 Alertas <span class="tab-badge" id="alertTabBadge" style="display:none">0</span>
       </button>
       <button class="tab" data-tab="history" onclick="switchTab('history')">📁 Histórico</button>
     </div>
 
-    <!-- PANELS -->
     <div class="tab-panels">
 
-      <!-- LIVE PANEL -->
+      <!-- ── LIVE PANEL ── -->
       <div class="panel active" id="panel-live">
-        <div id="liveNoVehicle" class="no-vehicle-msg">
-          <div class="icon">👈</div>
+        <div class="no-vehicle-msg" id="liveEmpty">
+          <div class="big-icon">👈</div>
           <div>Selecione um veículo na lista ao lado</div>
         </div>
-        <div id="liveContent" style="display:none; flex-direction:column; gap:16px; flex:1">
+        <div id="liveContent" style="display:none; flex-direction:column; gap:14px; flex:1">
           <div class="live-header">
-            <div class="live-vehicle-name">
-              <span id="liveVehicleName">—</span>
-              <span id="liveStatusDot" class="dot-online"></span>
+            <div class="live-title">
+              <span id="liveIcon" style="font-size:22px">🚛</span>
+              <h2 id="liveName">—</h2>
+              <span id="liveOnlineBadge" class="online-badge off">offline</span>
             </div>
             <div class="live-controls">
-              <button class="btn btn-green" id="btnStart" onclick="startStream('front')">▶ Iniciar Câmera Frontal</button>
-              <button class="btn btn-ghost" id="btnStartBoth" onclick="startStream('both')">▶ Ambas as Câmeras</button>
-              <button class="btn btn-red" id="btnStop" onclick="stopStream()" style="display:none">⏹ Parar</button>
+              <div class="channel-selector" id="channelSelector">
+                <!-- gerado dinamicamente -->
+              </div>
+              <button class="btn btn-green" id="btnStartLive" onclick="startLive()">▶ Iniciar</button>
+              <button class="btn btn-red" id="btnStopLive" onclick="stopLive()" style="display:none">⏹ Parar</button>
             </div>
           </div>
 
-          <div class="cam-grid" id="camGrid">
-            <div class="cam-card" id="camCard1">
-              <div class="cam-label">
-                📷 Câmera Frontal (Canal 1)
-                <span class="live-pill" id="livePill1">● AO VIVO</span>
-              </div>
-              <div class="cam-video-wrap">
-                <div class="cam-placeholder" id="placeholder1">
-                  <div class="cam-icon">📷</div>
-                  <div>Clique em "Iniciar" para ver ao vivo</div>
-                </div>
-                <video id="video1" style="display:none" muted autoplay playsinline controls></video>
-              </div>
-            </div>
-            <div class="cam-card" id="camCard2">
-              <div class="cam-label">
-                🎥 Câmera Interna (Canal 2)
-                <span class="live-pill" id="livePill2">● AO VIVO</span>
-              </div>
-              <div class="cam-video-wrap">
-                <div class="cam-placeholder" id="placeholder2">
-                  <div class="cam-icon">🎥</div>
-                  <div>Clique em "Ambas" para ativar</div>
-                </div>
-                <video id="video2" style="display:none" muted autoplay playsinline controls></video>
-              </div>
-            </div>
+          <div id="camGrid" class="cam-grid">
+            <!-- câmeras geradas dinamicamente -->
           </div>
 
-          <div id="streamInfo" style="display:none; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 14px; font-size:12px; color:var(--muted);">
-            URL do stream: <span id="streamUrlDisplay" style="font-family:monospace; color:var(--text)">—</span>
+          <div class="stream-info" id="streamInfo">
+            📡 Conectado: <code id="streamUrlDisplay">—</code>
           </div>
         </div>
       </div>
 
-      <!-- ALERTS PANEL -->
+      <!-- ── ALERTS PANEL ── -->
       <div class="panel" id="panel-alerts">
-        <div class="alerts-toolbar">
-          <h2>🔔 Alertas Recebidos</h2>
-          <div style="display:flex; gap:8px; align-items:center">
-            <div class="alerts-filter">
-              <button class="filter-btn active" onclick="filterAlerts('all', this)">Todos</button>
-              <button class="filter-btn" onclick="filterAlerts('critical', this)">Críticos</button>
-              <button class="filter-btn" onclick="filterAlerts('sos', this)">SOS</button>
-            </div>
-            <button class="btn btn-ghost" onclick="fetchAlerts()" id="btnRefreshAlerts">🔄 Atualizar</button>
-            <button class="btn btn-ghost" onclick="clearAlerts()" style="font-size:12px">🗑 Limpar lidos</button>
+        <div class="panel-toolbar">
+          <h2>🔔 Alertas</h2>
+          <div class="filter-row">
+            <button class="filter-btn active" onclick="filterAlerts('all',this)">Todos</button>
+            <button class="filter-btn" onclick="filterAlerts('unread',this)">Não lidos</button>
+            <button class="filter-btn" onclick="filterAlerts('critical',this)">Críticos</button>
+            <button class="btn btn-ghost btn-sm" onclick="fetchAlerts()" id="btnRefreshAlerts">🔄</button>
           </div>
         </div>
         <div id="alertsContainer">
-          <div class="empty-state">
-            <div class="e-icon">🔔</div>
-            <p>Nenhum alerta recebido ainda.</p>
-            <p style="margin-top:6px; font-size:12px">Os alertas aparecerão aqui quando o IoT Hub os enviar.</p>
-          </div>
+          <div class="loading-row"><div class="spinner"></div> Carregando alertas...</div>
         </div>
       </div>
 
-      <!-- HISTORY PANEL -->
+      <!-- ── HISTORY PANEL ── -->
       <div class="panel" id="panel-history">
-        <div class="history-toolbar">
+        <div class="panel-toolbar">
           <h2>📁 Histórico de Vídeos</h2>
-          <input type="date" class="inp" id="historyDate" style="width:160px">
-          <select class="inp" id="historyChannel" style="width:140px">
-            <option value="0">Todas as câmeras</option>
-            <option value="1">Câmera Frontal</option>
-            <option value="2">Câmera Interna</option>
-          </select>
-          <button class="btn btn-accent" onclick="loadHistory()">🔍 Buscar</button>
         </div>
-        <div id="histNoVehicle" style="color:var(--muted); font-size:14px; padding:20px 0">
-          👈 Selecione um veículo para buscar o histórico.
+        <div id="histEmpty" style="color:var(--muted);font-size:13px">👈 Selecione um veículo para buscar o histórico.</div>
+        <div id="histContent" style="display:none; flex-direction:column; gap:14px">
+          <div class="history-form">
+            <div>
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">De</label>
+              <input type="datetime-local" class="inp" id="histStart" style="width:190px">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Até</label>
+              <input type="datetime-local" class="inp" id="histEnd" style="width:190px">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Canal</label>
+              <select class="inp" id="histChannel" style="width:140px">
+                <option value="1">Canal 1 — Frontal</option>
+                <option value="2">Canal 2 — Interno</option>
+                <option value="3">Canal 3 — DMS</option>
+              </select>
+            </div>
+            <div style="align-self:flex-end">
+              <button class="btn btn-accent" onclick="loadHistory()">🔍 Buscar</button>
+            </div>
+          </div>
+          <div id="historyList"></div>
         </div>
-        <div id="historyContainer" style="display:none; flex-direction:column; gap:8px"></div>
       </div>
 
     </div><!-- /tab-panels -->
   </main>
 </div><!-- /layout -->
 
-<!-- MODAL: SETTINGS -->
-<div class="modal-overlay" id="settingsModal">
-  <div class="modal">
-    <h3>⚙ Configurações do IoT Hub</h3>
-
-    <div class="form-group">
-      <label>Endereço do Servidor IoT Hub (API)</label>
-      <input class="inp" id="cfgApiUrl" placeholder="http://SEU_IP:10088" type="url">
-      <div class="form-hint">Porta de comandos. Ex: http://120.78.224.93:10088</div>
-    </div>
-    <div class="form-group">
-      <label>Endereço do Media Server (Streaming)</label>
-      <input class="inp" id="cfgMediaUrl" placeholder="http://SEU_IP:8881" type="url">
-      <div class="form-hint">Para HTTPS use porta 8890. Ex: http://120.78.224.93:8881</div>
-    </div>
-    <div class="form-group">
-      <label>Endereço do Servidor de Arquivos (Download)</label>
-      <input class="inp" id="cfgFileUrl" placeholder="http://SEU_IP:23010" type="url">
-      <div class="form-hint">Porta de upload/download de vídeos de eventos.</div>
-    </div>
-    <div class="form-group">
-      <label>serverFlagId</label>
-      <input class="inp" id="cfgFlagId" placeholder="1" type="number" value="1">
-      <div class="form-hint">ID do servidor no IoT Hub. Normalmente é 1.</div>
-    </div>
-    <div class="form-group">
-      <label>Channel ID do Media Server</label>
-      <input class="inp" id="cfgChannelId" placeholder="1" type="text" value="1">
-      <div class="form-hint">ID do canal de stream (geralmente "1" ou o nome configurado no ZLMedia).</div>
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('settingsModal')">Cancelar</button>
-      <button class="btn btn-accent" onclick="saveSettings()">💾 Salvar</button>
-    </div>
-  </div>
-</div>
-
 <!-- MODAL: ADD VEHICLE -->
 <div class="modal-overlay" id="addVehicleModal">
   <div class="modal">
-    <h3>🚛 Adicionar Veículo</h3>
+    <h3>🚛 Adicionar Veículo por IMEI</h3>
     <div class="form-group">
       <label>Nome do Veículo</label>
-      <input class="inp" id="newVehicleName" placeholder="Ex: Caminhão 01 - Florestal" style="width:100%">
+      <input class="inp" id="newVehicleName" placeholder="Ex: Harvester Florestal 01" style="width:100%">
     </div>
     <div class="form-group">
-      <label>IMEI do Dispositivo</label>
+      <label>IMEI do Dispositivo JC400</label>
       <input class="inp" id="newVehicleImei" placeholder="Ex: 862708042244652" style="width:100%; font-family:monospace">
-      <div class="form-hint">Número de 15 dígitos que identifica a câmera JC400.</div>
+      <div class="form-hint">Número de 15 dígitos — encontrado na etiqueta do equipamento</div>
     </div>
     <div class="form-group">
-      <label>Ícone (opcional)</label>
+      <label>Ícone</label>
       <select class="inp" id="newVehicleIcon" style="width:100%">
-        <option value="🚛">🚛 Caminhão</option>
-        <option value="🚜">🚜 Trator</option>
-        <option value="🚌">🚌 Ônibus</option>
-        <option value="🚗">🚗 Carro</option>
-        <option value="🚧">🚧 Máquina</option>
         <option value="🌲">🌲 Veículo Florestal</option>
+        <option value="🚛">🚛 Caminhão</option>
+        <option value="🚜">🚜 Trator / Harvester</option>
+        <option value="🚧">🚧 Máquina Pesada</option>
+        <option value="🚗">🚗 Veículo Leve</option>
       </select>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('addVehicleModal')">Cancelar</button>
-      <button class="btn btn-green" onclick="addVehicle()">✅ Adicionar</button>
+      <button class="btn btn-green" onclick="addVehicleManual()">✅ Adicionar</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: MEDIA REQUEST -->
+<!-- MODAL: MEDIA VIEWER -->
 <div class="modal-overlay" id="mediaModal">
-  <div class="modal">
-    <h3>📥 Solicitar Mídia do Evento</h3>
-    <div id="mediaModalBody">
-      <div class="form-group">
-        <label>Veículo</label>
-        <input class="inp" id="mediaImeiDisplay" readonly style="width:100%">
-      </div>
-      <div class="form-group">
-        <label>Alarm Label (ID do evento)</label>
-        <input class="inp" id="mediaAlarmLabel" readonly style="width:100%; font-family:monospace">
-      </div>
-      <div class="form-group">
-        <label>Canal</label>
-        <select class="inp" id="mediaChannel" style="width:100%">
-          <option value="1">1 - Câmera Frontal / ADAS</option>
-          <option value="2">2 - Câmera USB</option>
-          <option value="3">3 - DMS (câmera interna)</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Tipo de Mídia</label>
-        <select class="inp" id="mediaType" style="width:100%">
-          <option value="2">Foto + Vídeo</option>
-          <option value="0">Somente Foto</option>
-          <option value="1">Somente Vídeo</option>
-        </select>
-      </div>
-    </div>
+  <div class="modal" style="max-width:600px;width:95vw">
+    <h3 id="mediaModalTitle">📸 Mídia do Evento</h3>
+    <div id="mediaModalBody" style="text-align:center"></div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('mediaModal')">Cancelar</button>
-      <button class="btn btn-accent" onclick="sendMediaRequest()">📤 Solicitar Upload</button>
+      <button class="btn btn-ghost" onclick="closeModal('mediaModal')">Fechar</button>
+      <a id="mediaDownloadLink" href="#" target="_blank" class="btn btn-accent" download>⬇ Baixar</a>
     </div>
   </div>
 </div>
 
-<!-- TOAST -->
 <div id="toast"></div>
 
 <script>
-/* ────────────────────────────────────────────
+/* ═══════════════════════════════════════════════
+   CONFIGURAÇÃO TURBOHIVE
+═══════════════════════════════════════════════ */
+const TH_BASE = '/api/th';   // proxy Netlify → http://turbohive.ai
+
+/* ═══════════════════════════════════════════════
    ESTADO GLOBAL
-──────────────────────────────────────────── */
-let config    = JSON.parse(localStorage.getItem('fms_config') || '{}');
-let vehicles  = JSON.parse(localStorage.getItem('fms_vehicles') || '[]');
-let currentVehicle = null;
-let flvPlayers = {};
-let alertsData  = [];
-let alertFilter = 'all';
-let unreadCount = 0;
-let alertInterval = null;
-let pendingMediaImei = null;
-let pendingMediaLabel = null;
+═══════════════════════════════════════════════ */
+let authData      = null;     // { accessToken, refreshToken, expiresIn }
+let currentUser   = null;     // email do usuário logado
+let devices       = [];       // lista de dispositivos da API
+let manualDevices = JSON.parse(localStorage.getItem('th_manual_devices') || '[]');
+let currentDevice = null;     // dispositivo selecionado
+let flvPlayers    = {};       // players flv.js por canal
+let activeChannels = [];      // canais sendo transmitidos
+let alertsData    = [];       // alertas carregados
+let alertFilter   = 'all';
+let alertTimer    = null;
+let selectedChannels = [1];   // canais selecionados para live
 
-const ALERT_TYPES = {
-  1:   { name: 'SOS',            icon: '🆘', level: 'critical' },
-  44:  { name: 'Colisão',        icon: '💥', level: 'critical' },
-  4:   { name: 'Excesso de vel.', icon: '⚡', level: 'warning' },
-  16:  { name: 'Fadiga',         icon: '😴', level: 'warning' },
-  39:  { name: 'ADAS - Colisão dianteira', icon: '🚨', level: 'critical' },
-  40:  { name: 'ADAS - Saída de faixa',   icon: '↔️', level: 'warning' },
-  36:  { name: 'DMS - Distração',         icon: '👁', level: 'warning' },
-  37:  { name: 'DMS - Sonolência',        icon: '😴', level: 'critical' },
-  105: { name: 'Upload concluído',        icon: '✅', level: 'info' },
-  65:  { name: 'Upload concluído (0x41)', icon: '✅', level: 'info' },
-};
-
-/* ────────────────────────────────────────────
+/* ═══════════════════════════════════════════════
    INICIALIZAÇÃO
-──────────────────────────────────────────── */
+═══════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
-  renderVehicleList();
-  updateConfigStatus();
+  // Datas padrão para histórico (últimas 24h)
+  const now = new Date();
+  const yesterday = new Date(now - 86400000);
+  document.getElementById('histEnd').value   = toDatetimeLocal(now);
+  document.getElementById('histStart').value = toDatetimeLocal(yesterday);
 
-  // Data padrão hoje no histórico
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('historyDate').value = today;
-
-  // Busca alertas a cada 30s
-  fetchAlerts();
-  alertInterval = setInterval(fetchAlerts, 30000);
+  // Auto-login se tiver credenciais salvas
+  const saved = localStorage.getItem('th_auth');
+  if (saved) {
+    authData = JSON.parse(saved);
+    const email = localStorage.getItem('th_email') || '';
+    loginSuccess(email);
+  }
 });
 
-/* ────────────────────────────────────────────
-   CONFIGURAÇÕES
-──────────────────────────────────────────── */
-function openModal(id) {
-  if (id === 'settingsModal') {
-    document.getElementById('cfgApiUrl').value    = config.apiUrl    || '';
-    document.getElementById('cfgMediaUrl').value  = config.mediaUrl  || '';
-    document.getElementById('cfgFileUrl').value   = config.fileUrl   || '';
-    document.getElementById('cfgFlagId').value    = config.flagId    || '1';
-    document.getElementById('cfgChannelId').value = config.channelId || '1';
-  }
-  document.getElementById(id).classList.add('open');
+function toDatetimeLocal(d) {
+  return d.toISOString().slice(0,16);
 }
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-}
-function saveSettings() {
-  config = {
-    apiUrl:    document.getElementById('cfgApiUrl').value.trim().replace(/\/$/, ''),
-    mediaUrl:  document.getElementById('cfgMediaUrl').value.trim().replace(/\/$/, ''),
-    fileUrl:   document.getElementById('cfgFileUrl').value.trim().replace(/\/$/, ''),
-    flagId:    document.getElementById('cfgFlagId').value || '1',
-    channelId: document.getElementById('cfgChannelId').value || '1',
-  };
-  localStorage.setItem('fms_config', JSON.stringify(config));
-  closeModal('settingsModal');
-  updateConfigStatus();
-  toast('Configurações salvas!', 'success');
-}
-function updateConfigStatus() {
-  const el = document.getElementById('configStatus');
-  if (config.apiUrl && config.mediaUrl) {
-    el.className = 'config-status ok';
-    el.textContent = '✅ IoT Hub configurado';
-  } else {
-    el.className = 'config-status notok';
-    el.textContent = '⚠ Sem configuração';
+
+/* ═══════════════════════════════════════════════
+   AUTENTICAÇÃO
+═══════════════════════════════════════════════ */
+async function doLogin() {
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const remember = document.getElementById('rememberMe').checked;
+  const errEl    = document.getElementById('loginError');
+  const btn      = document.getElementById('btnLogin');
+
+  if (!email || !password) { showLoginError('Preencha o e-mail e a senha.'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="border-top-color:white"></div> Entrando...';
+  errEl.style.display = 'none';
+
+  try {
+    const res = await thFetch('/v3/auth/login', 'POST', { email, password }, false);
+    if (res.code !== 1000) throw new Error(res.message || 'Credenciais inválidas');
+    authData = res.data;
+    if (remember) {
+      localStorage.setItem('th_auth', JSON.stringify(authData));
+      localStorage.setItem('th_email', email);
+    }
+    loginSuccess(email);
+  } catch(e) {
+    showLoginError(e.message || 'Erro ao conectar. Verifique o e-mail e a senha.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Entrar';
   }
 }
 
-/* ────────────────────────────────────────────
-   VEÍCULOS
-──────────────────────────────────────────── */
+function loginSuccess(email) {
+  currentUser = email;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('userPill').classList.add('visible');
+  document.getElementById('userEmail').textContent = email;
+  loadDevices();
+  fetchAlerts();
+  alertTimer = setInterval(fetchAlerts, 30000);
+}
+
+function doLogout() {
+  clearInterval(alertTimer);
+  authData = null;
+  currentUser = null;
+  localStorage.removeItem('th_auth');
+  localStorage.removeItem('th_email');
+  stopAllStreams();
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('userPill').classList.remove('visible');
+  document.getElementById('loginPassword').value = '';
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+
+/* ═══════════════════════════════════════════════
+   CHAMADAS API (com proxy Netlify)
+═══════════════════════════════════════════════ */
+async function thFetch(path, method = 'GET', body = null, withAuth = true) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (withAuth && authData?.accessToken) {
+    headers['Authorization'] = `Bearer ${authData.accessToken}`;
+  }
+  const opts = { method, headers };
+  if (body && method !== 'GET') opts.body = JSON.stringify(body);
+
+  const url = TH_BASE + path + (method === 'GET' && body ? '?' + new URLSearchParams(body) : '');
+  const res = await fetch(url, opts);
+
+  if (res.status === 401) {
+    // Tenta renovar token
+    const refreshed = await refreshToken();
+    if (refreshed) return thFetch(path, method, body, withAuth);
+    doLogout();
+    throw new Error('Sessão expirada. Por favor, entre novamente.');
+  }
+
+  return res.json();
+}
+
+async function refreshToken() {
+  if (!authData?.refreshToken) return false;
+  try {
+    const res = await fetch(TH_BASE + '/v3/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: authData.refreshToken })
+    });
+    const data = await res.json();
+    if (data.code === 1000) {
+      authData.accessToken = data.data.accessToken;
+      authData.expiresIn = data.data.expiresIn;
+      if (localStorage.getItem('th_auth')) localStorage.setItem('th_auth', JSON.stringify(authData));
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
+/* ═══════════════════════════════════════════════
+   DISPOSITIVOS
+═══════════════════════════════════════════════ */
+async function loadDevices() {
+  document.getElementById('vehicleList').innerHTML = '<div class="loading-row"><div class="spinner"></div> Carregando...</div>';
+  try {
+    const res = await thFetch('/v3/devices/page', 'GET', { page: 0, size: 100 });
+    if (res.code !== 1000) throw new Error(res.message);
+    devices = res.data?.data || [];
+    renderVehicleList();
+    toast(`${devices.length} veículo(s) carregado(s)`, 'success');
+  } catch(e) {
+    document.getElementById('vehicleList').innerHTML = `<div class="empty-state"><div class="e-icon">⚠️</div><p>${e.message}</p></div>`;
+  }
+}
+
+function allDevices() {
+  // Combina dispositivos da API com os adicionados manualmente (sem duplicatas)
+  const apiImeis = new Set(devices.map(d => d.imei));
+  const extras = manualDevices.filter(d => !apiImeis.has(d.imei));
+  return [...devices, ...extras];
+}
+
 function renderVehicleList() {
+  const list = allDevices();
   const el = document.getElementById('vehicleList');
-  if (!vehicles.length) {
-    el.innerHTML = `<div class="empty-state" style="padding:24px 12px"><div class="e-icon">🚛</div><p style="font-size:12px">Adicione veículos pelo botão abaixo</p></div>`;
+  if (!list.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:24px 12px"><div class="e-icon">🚛</div><p style="font-size:12px">Nenhum veículo encontrado</p></div>';
     return;
   }
-  el.innerHTML = vehicles.map((v, i) => `
-    <div class="vehicle-item ${currentVehicle?.imei === v.imei ? 'active' : ''}" onclick="selectVehicle(${i})">
-      <div class="vehicle-icon">${v.icon}</div>
+  el.innerHTML = list.map((d, i) => {
+    const isActive = currentDevice?.imei === d.imei;
+    const statusLabel = d.onlineStatus === 1 ? 'online' : d.onlineStatus === 2 ? 'offline' : 'idle';
+    const statusClass = d.onlineStatus === 1 ? 'on' : d.onlineStatus === 2 ? 'off' : 'idle';
+    const icon = d.icon || '🌲';
+    const isManual = !devices.find(x => x.imei === d.imei);
+    return `
+    <div class="vehicle-item ${isActive ? 'active' : ''}" onclick="selectDevice(${i})">
+      <div class="vehicle-icon">${icon}</div>
       <div class="vehicle-info">
-        <div class="vehicle-name">${v.name}</div>
-        <div class="vehicle-imei">${v.imei}</div>
+        <div class="vehicle-name">${d.deviceName || d.imei}</div>
+        <div class="vehicle-sub">${d.imei}</div>
       </div>
-      <div class="dot-online" id="dot-${v.imei}"></div>
-      <button class="vehicle-del" onclick="removeVehicle(event, ${i})">✕</button>
-    </div>
-  `).join('');
+      <span class="online-badge ${statusClass}">${statusLabel}</span>
+      ${isManual ? `<button class="vehicle-del" onclick="removeManual(event,'${d.imei}')">✕</button>` : ''}
+    </div>`;
+  }).join('');
 }
 
-function addVehicle() {
+async function selectDevice(i) {
+  const list = allDevices();
+  if (currentDevice?.imei === list[i].imei) return;
+  stopAllStreams();
+  currentDevice = list[i];
+  renderVehicleList();
+  showLiveVehicle();
+  updateHistorySection();
+  // Carrega contagem de canais
+  try {
+    const res = await thFetch(`/v3/devices/channel/${currentDevice.imei}`);
+    if (res.code === 1000) {
+      const count = res.data?.channelCount || 2;
+      buildChannelSelector(count);
+      buildCamGrid(count);
+    }
+  } catch { buildChannelSelector(2); buildCamGrid(2); }
+}
+
+function addVehicleManual() {
   const name = document.getElementById('newVehicleName').value.trim();
   const imei = document.getElementById('newVehicleImei').value.trim().replace(/\s/g,'');
   const icon = document.getElementById('newVehicleIcon').value;
-  if (!name || !imei) { toast('Preencha o nome e o IMEI', 'error'); return; }
-  if (!/^\d{15,}$/.test(imei)) { toast('IMEI inválido (deve ter 15 dígitos)', 'error'); return; }
-  if (vehicles.find(v => v.imei === imei)) { toast('Este IMEI já foi adicionado', 'error'); return; }
-  vehicles.push({ name, imei, icon });
-  localStorage.setItem('fms_vehicles', JSON.stringify(vehicles));
+  if (!name || !imei) { toast('Preencha nome e IMEI', 'error'); return; }
+  if (!/^\d{15,}$/.test(imei)) { toast('IMEI inválido (15 dígitos)', 'error'); return; }
+  if (allDevices().find(d => d.imei === imei)) { toast('IMEI já cadastrado', 'error'); return; }
+  manualDevices.push({ imei, deviceName: name, icon, onlineStatus: 0 });
+  localStorage.setItem('th_manual_devices', JSON.stringify(manualDevices));
   renderVehicleList();
   closeModal('addVehicleModal');
   document.getElementById('newVehicleName').value = '';
@@ -847,255 +603,253 @@ function addVehicle() {
   toast(`${name} adicionado!`, 'success');
 }
 
-function removeVehicle(e, i) {
+function removeManual(e, imei) {
   e.stopPropagation();
-  if (currentVehicle?.imei === vehicles[i].imei) { stopStream(); currentVehicle = null; showLiveEmpty(); }
-  vehicles.splice(i, 1);
-  localStorage.setItem('fms_vehicles', JSON.stringify(vehicles));
+  manualDevices = manualDevices.filter(d => d.imei !== imei);
+  localStorage.setItem('th_manual_devices', JSON.stringify(manualDevices));
+  if (currentDevice?.imei === imei) { currentDevice = null; showLiveEmpty(); }
   renderVehicleList();
 }
 
-function selectVehicle(i) {
-  if (currentVehicle?.imei === vehicles[i].imei) return;
-  stopStream();
-  currentVehicle = vehicles[i];
-  renderVehicleList();
-  showLiveVehicle();
-  updateHistorySection();
+/* ═══════════════════════════════════════════════
+   STREAMING AO VIVO
+═══════════════════════════════════════════════ */
+function buildChannelSelector(count) {
+  const el = document.getElementById('channelSelector');
+  el.innerHTML = Array.from({length: count}, (_, i) => {
+    const ch = i + 1;
+    const labels = ['Frontal','Interno','DMS','Cam 4','Cam 5'];
+    return `<button class="ch-btn ${ch===1?'active':''}" onclick="toggleChannel(${ch},this)">Ch${ch} ${labels[i]||''}</button>`;
+  }).join('');
+  selectedChannels = [1];
+}
+
+function toggleChannel(ch, btn) {
+  if (selectedChannels.includes(ch)) {
+    if (selectedChannels.length === 1) return; // manter ao menos 1
+    selectedChannels = selectedChannels.filter(c => c !== ch);
+    btn.classList.remove('active');
+  } else {
+    selectedChannels.push(ch);
+    btn.classList.add('active');
+  }
+}
+
+function buildCamGrid(count) {
+  const labels = ['📷 Frontal','🎥 Interno','👁 DMS','📷 Cam 4','📷 Cam 5'];
+  const el = document.getElementById('camGrid');
+  el.innerHTML = Array.from({length: count}, (_, i) => {
+    const ch = i + 1;
+    return `
+    <div class="cam-card" id="camCard${ch}">
+      <div class="cam-label">
+        ${labels[i]||'Câmera '+ch} (Canal ${ch})
+        <span class="live-pill" id="livePill${ch}">● AO VIVO</span>
+      </div>
+      <div class="cam-video-wrap" id="camWrap${ch}">
+        <div class="cam-placeholder" id="placeholder${ch}">
+          <div class="cam-icon">${ch===1?'📷':'ch'===2?'🎥':'👁'}</div>
+          <div>Clique em ▶ Iniciar para ver ao vivo</div>
+        </div>
+        <video id="video${ch}" style="display:none" muted autoplay playsinline controls></video>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function showLiveEmpty() {
-  document.getElementById('liveNoVehicle').style.display = 'flex';
+  document.getElementById('liveEmpty').style.display = 'flex';
   document.getElementById('liveContent').style.display = 'none';
 }
 function showLiveVehicle() {
-  document.getElementById('liveNoVehicle').style.display = 'none';
+  document.getElementById('liveEmpty').style.display = 'none';
   const lc = document.getElementById('liveContent');
   lc.style.display = 'flex';
-  document.getElementById('liveVehicleName').textContent = currentVehicle.name;
-  document.getElementById('btnStop').style.display = 'none';
-  document.getElementById('btnStart').style.display = '';
-  document.getElementById('btnStartBoth').style.display = '';
+  document.getElementById('liveIcon').textContent = currentDevice.icon || '🌲';
+  document.getElementById('liveName').textContent = currentDevice.deviceName || currentDevice.imei;
+  const status = currentDevice.onlineStatus;
+  const badge = document.getElementById('liveOnlineBadge');
+  badge.className = 'online-badge ' + (status===1?'on':status===2?'off':'idle');
+  badge.textContent = status===1?'online':status===2?'offline':'sem dados';
+  document.getElementById('btnStartLive').style.display = '';
+  document.getElementById('btnStopLive').style.display = 'none';
 }
 
-/* ────────────────────────────────────────────
-   STREAMING AO VIVO
-──────────────────────────────────────────── */
-function startStream(mode) {
-  if (!config.apiUrl) { toast('Configure o IoT Hub primeiro (⚙ Configurações)', 'error'); return; }
-  if (!currentVehicle) return;
+async function startLive() {
+  if (!currentDevice) return;
+  if (!selectedChannels.length) { toast('Selecione ao menos um canal', 'error'); return; }
 
-  const cmdContent = 'RTMP,ON,' + (mode === 'both' ? 'INOUT' : 'IN');
+  document.getElementById('btnStartLive').disabled = true;
+  document.getElementById('btnStartLive').innerHTML = '<div class="spinner" style="border-top-color:#000"></div> Iniciando...';
 
-  // Envia comando ao dispositivo via proxy
-  const body = new URLSearchParams({
-    deviceImei: currentVehicle.imei,
-    cmdContent,
-    serverFlagId: config.flagId || '1',
-    proNo: '128',
-    platform: 'web',
-    requestId: Date.now().toString(),
-    cmdType: 'normalIns'
-  });
+  let anyStarted = false;
+  for (const ch of selectedChannels) {
+    try {
+      const res = await thFetch('/v3/video/live/start', 'POST', {
+        imei: currentDevice.imei,
+        channel: ch,
+        dataType: '0',    // video
+        streamType: '0',  // main stream
+      });
+      if (res.code !== 1000) { toast(`Canal ${ch}: ${res.message}`, 'error'); continue; }
+      const urls = res.data?.streamingUrls || res.data?.streamingSslUrls || {};
+      const flvUrl = urls.flv;
+      if (!flvUrl) { toast(`Canal ${ch}: sem URL de stream`, 'error'); continue; }
+      startFlvPlayer(ch, flvUrl);
+      anyStarted = true;
+    } catch(e) { toast(`Canal ${ch}: ${e.message}`, 'error'); }
+  }
 
-  fetch('/api/iot/api/device/sendInstruct', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'x-iothub-url': config.apiUrl },
-    body: body.toString()
-  })
-  .then(r => r.json())
-  .then(data => {
-    console.log('Comando RTMP:', data);
-    toast('Comando de streaming enviado! Aguardando vídeo...', 'success');
-  })
-  .catch(() => {
-    toast('Não foi possível enviar comando (verifique a configuração)', 'error');
-  });
+  document.getElementById('btnStartLive').disabled = false;
+  document.getElementById('btnStartLive').innerHTML = '▶ Iniciar';
 
-  // Inicia players depois de 3s (tempo para o dispositivo aceitar)
-  setTimeout(() => {
-    startFlvPlayer(1);
-    if (mode === 'both') setTimeout(() => startFlvPlayer(2), 1000);
-  }, 3000);
-
-  document.getElementById('btnStop').style.display = '';
-  document.getElementById('btnStart').style.display = 'none';
-  document.getElementById('btnStartBoth').style.display = 'none';
-
-  const dot = document.getElementById(`dot-${currentVehicle.imei}`);
-  if (dot) dot.classList.add('streaming');
+  if (anyStarted) {
+    document.getElementById('btnStartLive').style.display = 'none';
+    document.getElementById('btnStopLive').style.display = '';
+  }
 }
 
-function startFlvPlayer(channel) {
-  if (!flvjs.isSupported()) { toast('Seu navegador não suporta streaming FLV. Use o Chrome.', 'error'); return; }
-
-  const imei    = currentVehicle.imei;
-  const chId    = config.channelId || '1';
-  const mediaBase = config.mediaUrl || '';
-  // URL do stream: http://IP:8881/live/{channelId}/{imei}_{channel}.flv
-  const streamUrl = `${mediaBase}/live/${chId}/${imei}.flv`;
+function startFlvPlayer(channel, flvUrl) {
+  if (!flvjs.isSupported()) { toast('Use o Chrome para streaming FLV', 'error'); return; }
+  if (flvPlayers[channel]) { flvPlayers[channel].destroy(); delete flvPlayers[channel]; }
 
   const videoEl = document.getElementById(`video${channel}`);
   const placeholder = document.getElementById(`placeholder${channel}`);
   const pill = document.getElementById(`livePill${channel}`);
-
-  // Destrói player anterior se existir
-  if (flvPlayers[channel]) {
-    flvPlayers[channel].destroy();
-    delete flvPlayers[channel];
-  }
+  if (!videoEl) return;
 
   placeholder.style.display = 'none';
   videoEl.style.display = 'block';
 
-  const player = flvjs.createPlayer({
-    type: 'flv',
-    url: streamUrl,
-    isLive: true,
-    cors: true,
-  }, {
-    enableWorker: true,
-    enableStashBuffer: false,
-    stashInitialSize: 128,
-    lazyLoad: false,
-  });
-
+  const player = flvjs.createPlayer(
+    { type: 'flv', url: flvUrl, isLive: true, cors: true },
+    { enableWorker: true, enableStashBuffer: false, stashInitialSize: 128, lazyLoad: false }
+  );
   player.attachMediaElement(videoEl);
   player.load();
-  player.play().catch(() => {});
-
-  player.on(flvjs.Events.ERROR, (errType, errDetail) => {
-    console.warn('FLV error:', errType, errDetail);
-    placeholder.style.display = 'flex';
-    placeholder.innerHTML = `<div class="cam-icon">❌</div><div>Falha no stream (${errType})</div><div style="font-size:11px; margin-top:4px">Verifique se a câmera está online</div>`;
-    videoEl.style.display = 'none';
-    pill.classList.remove('on');
-  });
+  player.play().catch(()=>{});
 
   player.on(flvjs.Events.MEDIA_INFO, () => {
-    pill.classList.add('on');
+    pill?.classList.add('on');
+    document.getElementById('streamInfo').style.display = 'block';
+    document.getElementById('streamUrlDisplay').textContent = flvUrl;
+  });
+  player.on(flvjs.Events.ERROR, (errType) => {
+    if (placeholder) { placeholder.style.display = 'flex'; placeholder.innerHTML = `<div class="cam-icon">❌</div><div>Falha no stream<br><small>${errType}</small></div>`; }
+    if (videoEl) videoEl.style.display = 'none';
+    pill?.classList.remove('on');
   });
 
   flvPlayers[channel] = player;
-
-  // Exibe URL no rodapé
-  document.getElementById('streamInfo').style.display = 'block';
-  document.getElementById('streamUrlDisplay').textContent = streamUrl;
+  activeChannels.push(channel);
 }
 
-function stopStream() {
-  const cmdContent = 'RTMP,OFF';
-  if (config.apiUrl && currentVehicle) {
-    const body = new URLSearchParams({
-      deviceImei: currentVehicle.imei,
-      cmdContent,
-      serverFlagId: config.flagId || '1',
-      proNo: '128',
-      platform: 'web',
-      requestId: Date.now().toString(),
-      cmdType: 'normalIns'
-    });
-    fetch('/api/iot/api/device/sendInstruct', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'x-iothub-url': config.apiUrl },
-      body: body.toString()
-    }).catch(() => {});
+async function stopLive() {
+  for (const ch of activeChannels) {
+    try {
+      await thFetch('/v3/video/live/stop', 'POST', { imei: currentDevice.imei, channel: ch });
+    } catch {}
   }
-  [1, 2].forEach(ch => {
-    if (flvPlayers[ch]) {
-      flvPlayers[ch].destroy();
-      delete flvPlayers[ch];
-    }
-    const v = document.getElementById(`video${ch}`);
-    if (v) { v.src = ''; v.style.display = 'none'; }
-    const p = document.getElementById(`placeholder${ch}`);
-    if (p) { p.style.display = 'flex'; p.innerHTML = `<div class="cam-icon">${ch===1?'📷':'🎥'}</div><div>${ch===1?'Clique em "Iniciar" para ver ao vivo':'Clique em "Ambas" para ativar'}</div>`; }
-    const pill = document.getElementById(`livePill${ch}`);
-    if (pill) pill.classList.remove('on');
-  });
-  if (currentVehicle) {
-    const dot = document.getElementById(`dot-${currentVehicle.imei}`);
-    if (dot) dot.classList.remove('streaming');
-  }
-  document.getElementById('btnStop').style.display = 'none';
-  document.getElementById('btnStart').style.display = '';
-  document.getElementById('btnStartBoth').style.display = '';
+  stopAllStreams();
+  document.getElementById('btnStartLive').style.display = '';
+  document.getElementById('btnStopLive').style.display = 'none';
   document.getElementById('streamInfo').style.display = 'none';
 }
 
-/* ────────────────────────────────────────────
+function stopAllStreams() {
+  Object.entries(flvPlayers).forEach(([ch, player]) => {
+    try { player.destroy(); } catch {}
+    const v = document.getElementById(`video${ch}`);
+    const p = document.getElementById(`placeholder${ch}`);
+    const pill = document.getElementById(`livePill${ch}`);
+    if (v) { v.src=''; v.style.display='none'; }
+    if (p) { p.style.display='flex'; }
+    if (pill) pill.classList.remove('on');
+  });
+  flvPlayers = {};
+  activeChannels = [];
+}
+
+/* ═══════════════════════════════════════════════
    ALERTAS
-──────────────────────────────────────────── */
-function fetchAlerts() {
+═══════════════════════════════════════════════ */
+async function fetchAlerts() {
   const btn = document.getElementById('btnRefreshAlerts');
   if (btn) btn.disabled = true;
+  try {
+    const res = await thFetch('/v3/alerts/page', 'GET', { page: 0, size: 50, status: '' });
+    if (res.code !== 1000) throw new Error(res.message);
+    alertsData = res.data?.data || [];
+    renderAlerts();
+  } catch(e) {
+    console.warn('Alertas:', e.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
 
-  fetch('/api/alerts')
-    .then(r => r.ok ? r.json() : [])
-    .then(data => {
-      const prev = alertsData.length;
-      alertsData = data;
-      renderAlerts();
-      if (data.length > prev && prev > 0) {
-        const newCount = data.length - prev;
-        toast(`🔔 ${newCount} novo(s) alerta(s)!`, 'success');
-      }
-    })
-    .catch(() => {})
-    .finally(() => { if (btn) btn.disabled = false; });
+const ALERT_META = {
+  'SOS':       { icon:'🆘', level:'critical' },
+  'COLLISION': { icon:'💥', level:'critical' },
+  'ADAS':      { icon:'🚨', level:'critical' },
+  'DMS':       { icon:'👁',  level:'warning'  },
+  'SPEED':     { icon:'⚡', level:'warning'  },
+  'FATIGUE':   { icon:'😴', level:'warning'  },
+  'DEFAULT':   { icon:'⚠️', level:'warning'  },
+};
+function alertMeta(type) {
+  const key = Object.keys(ALERT_META).find(k => (type||'').toUpperCase().includes(k)) || 'DEFAULT';
+  return ALERT_META[key];
 }
 
 function renderAlerts() {
   const container = document.getElementById('alertsContainer');
-  let filtered = alertsData;
+  let list = [...alertsData];
+  if (alertFilter === 'unread')   list = list.filter(a => a.status === 0);
+  if (alertFilter === 'critical') list = list.filter(a => alertMeta(a.type).level === 'critical');
 
-  if (alertFilter === 'critical') filtered = alertsData.filter(a => getAlertLevel(a.alertType) === 'critical');
-  else if (alertFilter === 'sos')  filtered = alertsData.filter(a => String(a.alertType) === '1');
+  const unread = alertsData.filter(a => a.status === 0).length;
+  const badge = document.getElementById('alertTabBadge');
+  badge.textContent = unread;
+  badge.style.display = unread > 0 ? '' : 'none';
 
-  unreadCount = alertsData.filter(a => !a._read).length;
-  updateAlertBadge();
-
-  if (!filtered.length) {
-    container.innerHTML = `<div class="empty-state"><div class="e-icon">🔔</div><p>Nenhum alerta ${alertFilter !== 'all' ? 'nesta categoria' : 'recebido ainda'}.</p></div>`;
+  if (!list.length) {
+    container.innerHTML = `<div class="empty-state"><div class="e-icon">🔔</div><p>Nenhum alerta${alertFilter!=='all'?' nesta categoria':''}.</p></div>`;
     return;
   }
 
-  const vMap = Object.fromEntries(vehicles.map(v => [v.imei, v]));
+  const devMap = Object.fromEntries(allDevices().map(d=>[d.imei, d]));
 
-  container.innerHTML = `<div class="alert-list">${filtered.map((a, i) => {
-    const info   = ALERT_TYPES[a.alertType] || { name: `Alerta #${a.alertType}`, icon: '⚠️', level: 'warning' };
-    const vehicle = vMap[a.imei] || { name: a.imei, icon: '📡' };
-    const time   = a.receivedAt ? new Date(a.receivedAt).toLocaleString('pt-BR') : '—';
-    const hasMedia = !!a.alarmLabel;
+  container.innerHTML = `<div class="alert-list">${list.map(a => {
+    const meta = alertMeta(a.type);
+    const dev  = devMap[a.imei] || {};
+    const time = a.alertTime ? new Date(a.alertTime).toLocaleString('pt-BR') : '—';
+    const name = a.alertName || a.type || 'Alerta';
+    const levelLabel = meta.level === 'critical' ? 'CRÍTICO' : meta.level === 'warning' ? 'ALERTA' : 'INFO';
+    const attachHtml = (a.attachment||[]).map(att => {
+      const isImg = att.mediaType === 0;
+      const thumb = att.storagePath ? `<img src="${att.storagePath}" onerror="this.parentNode.innerHTML='📷'" style="width:100%;height:100%;object-fit:cover">` : (isImg ? '📷' : '🎬');
+      return `<div class="attach-thumb" onclick="openMedia('${att.storagePath||''}','${att.fileName||''}',${att.mediaType})" title="${att.fileName||''}">${thumb}</div>`;
+    }).join('');
     return `
-    <div class="alert-card ${!a._read ? 'unread' : ''}" id="alert-${i}">
-      <div class="alert-icon">${info.icon}</div>
+    <div class="alert-card ${a.status===0?'unread':''}">
+      <div class="alert-icon">${meta.icon}</div>
       <div class="alert-body">
-        <div class="alert-title">${info.name}</div>
+        <div class="alert-title">${name}</div>
         <div class="alert-meta">
-          <span>${vehicle.icon} ${vehicle.name}</span>
+          <span>${dev.icon||'📡'} ${dev.deviceName||a.imei}</span>
           <span>🕐 ${time}</span>
-          ${a.alarmLabel ? `<span style="font-family:monospace;font-size:10px">🏷 ${a.alarmLabel.substring(0,20)}...</span>` : ''}
+          ${a.location ? `<span>📍 ${a.location}</span>` : ''}
+          ${a.firingStatus ? `<span>${a.firingStatus==='Start'?'🔴 Início':'🟢 Fim'}</span>` : ''}
         </div>
+        ${a.description ? `<div style="font-size:12px;color:var(--muted);margin-top:2px">${a.description}</div>` : ''}
+        ${attachHtml ? `<div class="alert-attachments">${attachHtml}</div>` : ''}
       </div>
       <div class="alert-actions">
-        <span class="alert-level level-${info.level}">${info.level === 'critical' ? 'CRÍTICO' : info.level === 'warning' ? 'ALERTA' : 'INFO'}</span>
-        ${hasMedia ? `<button class="btn btn-ghost" style="font-size:11px; padding:5px 10px" onclick="openMediaRequest('${a.imei}','${a.alarmLabel}')">📥 Mídia</button>` : ''}
-        ${a.file ? `<a href="${config.fileUrl}/download/${a.file}" target="_blank" class="btn btn-ghost" style="font-size:11px; padding:5px 10px">⬇ Baixar</a>` : ''}
-        <button class="btn btn-ghost" style="font-size:11px; padding:5px 10px" onclick="markRead(${i})">✓</button>
+        <span class="alert-level level-${meta.level}">${levelLabel}</span>
       </div>
     </div>`;
   }).join('')}</div>`;
-}
-
-function markRead(i) {
-  const filtered = alertFilter === 'all' ? alertsData : alertsData.filter(a => getAlertLevel(a.alertType) === alertFilter);
-  if (filtered[i]) { filtered[i]._read = true; renderAlerts(); }
-}
-
-function clearAlerts() {
-  alertsData = alertsData.filter(a => !a._read);
-  renderAlerts();
 }
 
 function filterAlerts(f, btn) {
@@ -1105,161 +859,148 @@ function filterAlerts(f, btn) {
   renderAlerts();
 }
 
-function getAlertLevel(type) { return (ALERT_TYPES[type] || {}).level || 'warning'; }
-
-function updateAlertBadge() {
-  const badge = document.getElementById('alertBadge');
-  const tabBadge = document.getElementById('alertTabBadge');
-  if (unreadCount > 0) {
-    badge.textContent = unreadCount;
-    badge.classList.add('visible');
-    tabBadge.textContent = unreadCount;
-    tabBadge.style.display = '';
-  } else {
-    badge.classList.remove('visible');
-    tabBadge.style.display = 'none';
-  }
-}
-
-/* ────────────────────────────────────────────
-   SOLICITAR MÍDIA (VIDEOUPLOAD)
-──────────────────────────────────────────── */
-function openMediaRequest(imei, alarmLabel) {
-  pendingMediaImei  = imei;
-  pendingMediaLabel = alarmLabel;
-  const veh = vehicles.find(v => v.imei === imei);
-  document.getElementById('mediaImeiDisplay').value  = veh ? `${veh.icon} ${veh.name} (${imei})` : imei;
-  document.getElementById('mediaAlarmLabel').value   = alarmLabel;
+function openMedia(url, fileName, type) {
+  if (!url) { toast('URL de mídia não disponível', 'error'); return; }
+  const isImg = type === 0;
+  const body = isImg
+    ? `<img src="${url}" style="max-width:100%;border-radius:8px" onerror="this.alt='Não foi possível carregar a imagem'">`
+    : `<video src="${url}" controls style="max-width:100%;border-radius:8px"></video>`;
+  document.getElementById('mediaModalTitle').textContent = isImg ? '📸 Foto do Evento' : '🎬 Vídeo do Evento';
+  document.getElementById('mediaModalBody').innerHTML = body;
+  document.getElementById('mediaDownloadLink').href = url;
+  document.getElementById('mediaDownloadLink').download = fileName;
   openModal('mediaModal');
 }
 
-function sendMediaRequest() {
-  if (!config.apiUrl) { toast('Configure o IoT Hub primeiro', 'error'); return; }
-  if (!pendingMediaImei || !pendingMediaLabel) return;
-
-  const fileServerIp   = (config.fileUrl || '').replace(/https?:\/\//, '').split(':')[0];
-  const fileServerPort = (config.fileUrl || '').split(':')[2] || '23010';
-  const channel = document.getElementById('mediaChannel').value;
-  const type    = document.getElementById('mediaType').value;
-
-  const cmdContent = `VIDEOUPLOAD,${fileServerIp},${fileServerPort},${pendingMediaLabel},${channel},${type}`;
-
-  const body = new URLSearchParams({
-    deviceImei: pendingMediaImei,
-    cmdContent,
-    serverFlagId: config.flagId || '1',
-    proNo: '128',
-    platform: 'web',
-    requestId: Date.now().toString(),
-    cmdType: 'normalIns'
-  });
-
-  fetch('/api/iot/api/device/sendInstruct', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'x-iothub-url': config.apiUrl },
-    body: body.toString()
-  })
-  .then(r => r.json())
-  .then(data => {
-    console.log('Resposta VIDEOUPLOAD:', data);
-    toast('Solicitação enviada! O vídeo chegará em breve nos alertas.', 'success');
-    closeModal('mediaModal');
-  })
-  .catch(() => { toast('Erro ao enviar solicitação', 'error'); });
+/* ═══════════════════════════════════════════════
+   HISTÓRICO
+═══════════════════════════════════════════════ */
+function updateHistorySection() {
+  document.getElementById('histEmpty').style.display = currentDevice ? 'none' : 'block';
+  document.getElementById('histContent').style.display = currentDevice ? 'flex' : 'none';
+  if (currentDevice) document.getElementById('historyList').innerHTML = '<div class="empty-state"><div class="e-icon">📁</div><p>Selecione intervalo e clique em Buscar.</p></div>';
 }
 
-/* ────────────────────────────────────────────
-   HISTÓRICO (TFFILELIST)
-──────────────────────────────────────────── */
-function updateHistorySection() {
-  const noVeh = document.getElementById('histNoVehicle');
-  const cont  = document.getElementById('historyContainer');
-  if (currentVehicle) {
-    noVeh.style.display = 'none';
-    cont.style.display = 'flex';
-    cont.innerHTML = `<div class="empty-state"><div class="e-icon">📁</div><p>Selecione uma data e clique em "Buscar".</p></div>`;
-  } else {
-    noVeh.style.display = 'block';
-    cont.style.display = 'none';
+async function loadHistory() {
+  if (!currentDevice) { toast('Selecione um veículo', 'error'); return; }
+  const startVal = document.getElementById('histStart').value;
+  const endVal   = document.getElementById('histEnd').value;
+  const channel  = parseInt(document.getElementById('histChannel').value);
+  if (!startVal || !endVal) { toast('Selecione o intervalo de datas', 'error'); return; }
+
+  const startMs = new Date(startVal).getTime().toString();
+  const endMs   = new Date(endVal).getTime().toString();
+  const list = document.getElementById('historyList');
+  list.innerHTML = '<div class="loading-row"><div class="spinner"></div> Buscando arquivos...</div>';
+
+  try {
+    const res = await thFetch('/v3/video/files/list', 'POST', {
+      imei: currentDevice.imei,
+      channel,
+      startTime: startMs,
+      endTime: endMs,
+      dataType: 0,
+      streamType: 0,
+      storageType: 0,
+    });
+    if (res.code !== 1000) throw new Error(res.message);
+    const files = res.data || [];
+    if (!files.length) {
+      list.innerHTML = '<div class="empty-state"><div class="e-icon">📂</div><p>Nenhum arquivo encontrado neste período.</p></div>';
+      return;
+    }
+    list.innerHTML = `<div class="file-list">${files.map(f => {
+      const name = f.fileName || f.name || 'arquivo';
+      const size = f.fileSize ? (f.fileSize/1024/1024).toFixed(1)+' MB' : '';
+      const dur  = f.duration ? f.duration+'s' : '';
+      const time = f.startTime ? new Date(parseInt(f.startTime)).toLocaleString('pt-BR') : '';
+      return `
+      <div class="file-card">
+        <div class="file-icon">🎬</div>
+        <div class="file-info">
+          <div class="file-name">${name}</div>
+          <div class="file-meta">${[time, dur, size].filter(Boolean).join(' · ')}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="playbackFile('${name}')">▶ Playback</button>
+          <button class="btn btn-ghost btn-sm" onclick="uploadFile('${name}')">📤 Upload</button>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+    toast(`${files.length} arquivo(s) encontrado(s)`, 'success');
+  } catch(e) {
+    list.innerHTML = `<div class="empty-state"><div class="e-icon">❌</div><p>${e.message}</p></div>`;
   }
 }
 
-function loadHistory() {
-  if (!currentVehicle) { toast('Selecione um veículo primeiro', 'error'); return; }
-  if (!config.apiUrl)  { toast('Configure o IoT Hub primeiro', 'error'); return; }
-
-  const date    = document.getElementById('historyDate').value.replace(/-/g, '');
-  const channel = document.getElementById('historyChannel').value;
-  const cont    = document.getElementById('historyContainer');
-
-  cont.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:20px;color:var(--muted)"><div class="spinner"></div> Buscando lista de arquivos...</div>`;
-
-  // Envia comando TFFILELIST via proxy
-  const cmdContent = `TFFILELIST,${date},${channel}`;
-  const body = new URLSearchParams({
-    deviceImei: currentVehicle.imei,
-    cmdContent,
-    serverFlagId: config.flagId || '1',
-    proNo: '128',
-    platform: 'web',
-    requestId: Date.now().toString(),
-    cmdType: 'normalIns'
-  });
-
-  fetch('/api/iot/api/device/sendInstruct', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'x-iothub-url': config.apiUrl },
-    body: body.toString()
-  })
-  .then(r => r.json())
-  .then(data => {
-    cont.innerHTML = `
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
-        <p style="font-size:14px;font-weight:600;margin-bottom:8px;">📤 Comando enviado ao dispositivo</p>
-        <p style="font-size:13px;color:var(--muted)">O dispositivo vai enviar a lista de arquivos para o webhook configurado no IoT Hub.</p>
-        <p style="font-size:12px;color:var(--muted);margin-top:8px">Resposta do servidor: <code style="background:#0f172a;padding:2px 6px;border-radius:4px">${JSON.stringify(data)}</code></p>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-          <p style="font-size:12px;color:var(--muted)">💡 A lista completa chegará via /pushresourcelist no seu servidor.
-          Os arquivos disponíveis para download aparecerão automaticamente quando o dispositivo responder.</p>
-        </div>
-      </div>`;
-    toast('Solicitação de histórico enviada!', 'success');
-  })
-  .catch(() => {
-    cont.innerHTML = `<div class="empty-state"><div class="e-icon">❌</div><p>Erro ao buscar histórico. Verifique a configuração do IoT Hub.</p></div>`;
-  });
+async function playbackFile(fileName) {
+  if (!currentDevice) return;
+  try {
+    const res = await thFetch('/v3/video/playback/start', 'POST', {
+      imei: currentDevice.imei,
+      fileNames: [fileName],
+      playMethod: 0,
+      forwardRewind: 0,
+    });
+    if (res.code !== 1000) throw new Error(res.message);
+    const urls = res.data?.streamingUrls || res.data?.streamingSslUrls || {};
+    const flvUrl = urls.flv;
+    if (!flvUrl) { toast('Sem URL de playback', 'error'); return; }
+    // Mostra no canal 1
+    switchTab('live');
+    if (!document.getElementById('liveContent').style.display || document.getElementById('liveContent').style.display === 'none') showLiveVehicle();
+    startFlvPlayer(1, flvUrl);
+    document.getElementById('btnStopLive').style.display = '';
+    toast('Playback iniciado no Canal 1', 'success');
+  } catch(e) { toast('Erro no playback: ' + e.message, 'error'); }
 }
 
-/* ────────────────────────────────────────────
-   TABS
-──────────────────────────────────────────── */
+async function uploadFile(fileName) {
+  if (!currentDevice) return;
+  try {
+    const res = await thFetch('/v3/video/upload/start', 'POST', {
+      imei: currentDevice.imei,
+      fileNames: [fileName],
+      dataType: 0,
+      streamType: 0,
+      storageType: 0,
+    });
+    if (res.code === 1000) toast('Upload iniciado! O arquivo ficará disponível em "Alertas" quando concluir.', 'success');
+    else throw new Error(res.message);
+  } catch(e) { toast('Erro ao solicitar upload: ' + e.message, 'error'); }
+}
+
+/* ═══════════════════════════════════════════════
+   TABS / UI
+═══════════════════════════════════════════════ */
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelector(`[data-tab="${name}"]`).classList.add('active');
   document.getElementById(`panel-${name}`).classList.add('active');
-  if (name === 'alerts') { alertsData.forEach(a => a._read = true); renderAlerts(); }
   if (name === 'history') updateHistorySection();
 }
 
-/* ────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if(e.target===o) o.classList.remove('open'); }));
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') doLogin();
+});
+
+/* ═══════════════════════════════════════════════
    TOAST
-──────────────────────────────────────────── */
-let toastTimer;
-function toast(msg, type = 'info') {
+═══════════════════════════════════════════════ */
+let _toastTimer;
+function toast(msg, type='info') {
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.className = `show ${type}`;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.className = ''; }, 3500);
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.className = '', 3500);
 }
-
-/* ── Fecha modais clicando fora ── */
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) overlay.classList.remove('open');
-  });
-});
 </script>
 </body>
 </html>
