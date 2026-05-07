@@ -432,7 +432,14 @@ async function doLogin() {
 
   try {
     const res = await thFetch('/v3/auth/login', 'POST', { email, password }, false);
-    if (res.code !== 1000) throw new Error(res.message || 'Credenciais inválidas');
+    console.log('[TurboHive Login] Resposta completa:', JSON.stringify(res));
+
+    // Aceita código 1000 (padrão TurboHive) ou 200 (fallback)
+    const ok = res.code === 1000 || res.code === 200 || res.status === 'success';
+    if (!ok) {
+      const detail = res.message || res.msg || res.error || JSON.stringify(res);
+      throw new Error(`TurboHive respondeu (código ${res.code}): ${detail}`);
+    }
     authData = res.data;
     if (remember) {
       localStorage.setItem('th_auth', JSON.stringify(authData));
@@ -440,6 +447,7 @@ async function doLogin() {
     }
     loginSuccess(email);
   } catch(e) {
+    console.error('[Login erro]', e);
     showLoginError(e.message || 'Erro ao conectar. Verifique o e-mail e a senha.');
   } finally {
     btn.disabled = false;
