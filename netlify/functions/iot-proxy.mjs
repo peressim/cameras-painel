@@ -1,12 +1,14 @@
 /**
  * turbohive-proxy.mjs
- * Proxy para a API do TurboHive (http://turbohive.ai).
- * O frontend chama /api/th/* e este proxy repassa para http://turbohive.ai/v3/*
+ * Proxy para a API do TurboHive.
+ * O frontend chama /api/th/* e este proxy repassa para turbohive.ai
  *
- * Necessário porque o browser bloqueia chamadas diretas cross-origin (CORS).
+ * Usa HTTP como base e segue redirects manualmente para preservar o método POST.
+ * (O servidor TurboHive redireciona HTTP→HTTPS convertendo POST em GET,
+ *  e além disso os endpoints de vídeo só existem no servidor HTTP.)
  */
 
-const TURBOHIVE_BASE = 'https://turbohive.ai';
+const TURBOHIVE_BASE = 'http://turbohive.ai';
 
 export default async (request) => {
   if (request.method === 'OPTIONS') {
@@ -33,11 +35,27 @@ export default async (request) => {
   }
 
   try {
-    const upstream = await fetch(targetUrl, {
-      method:  request.method,
-      headers: proxyHeaders,
-      body:    proxyBody,
+    // Primeira tentativa: HTTP, sem seguir redirects automaticamente
+    let upstream = await fetch(targetUrl, {
+      method:   request.method,
+      headers:  proxyHeaders,
+      body:     proxyBody,
+      redirect: 'manual',
     });
+
+    // Se o servidor redirecionar (301/302/307/308), seguimos manualmente
+    // preservando o método e o body originais (o fetch padrão converte POST→GET)
+    if (upstream.status >= 300 && upstream.status < 400) {
+      const location = upstream.headers.get('location');
+      if (location) {
+        console.log(`[proxy] Redirect ${upstream.status} → ${location}`);
+        upstream = await fetch(location, {
+          method:  request.method,
+          headers: proxyHeaders,
+          body:    proxyBody,
+        });
+      }
+    }
 
     const text = await upstream.text();
 
