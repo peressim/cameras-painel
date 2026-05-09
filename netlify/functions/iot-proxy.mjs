@@ -2,9 +2,11 @@
  * iot-proxy.mjs
  * Proxy para o IoT Hub JIMI (servidor próprio no Hetzner).
  * O frontend chama /api/iothub/* e este proxy repassa para http://178.105.90.63:10088/*
+ *
+ * Necessário porque o browser não pode chamar HTTP diretamente de uma página HTTPS (mixed content).
  */
 
-const IOTHUB_BASE = 'http://178.105.90.63:10088';
+const IOTHUB_BASE = 'http://178.105.90.63:9080';
 
 export default async (request) => {
   if (request.method === 'OPTIONS') {
@@ -33,7 +35,9 @@ export default async (request) => {
       headers: proxyHeaders,
       body:    proxyBody,
     });
+
     const text = await upstream.text();
+
     return new Response(text, {
       status:  upstream.status,
       headers: {
@@ -42,6 +46,7 @@ export default async (request) => {
       },
     });
   } catch (err) {
+    console.error('[proxy] Erro ao contactar IoT Hub:', err.message);
     return new Response(
       JSON.stringify({ code: 500, message: `Proxy error: ${err.message}` }),
       { status: 502, headers: { 'Content-Type': 'application/json', ...corsHeaders() } }
@@ -57,4 +62,6 @@ function corsHeaders() {
   };
 }
 
-export const config = { path: '/api/iothub/*' };
+export const config = {
+  path: '/api/iothub/*',
+};
