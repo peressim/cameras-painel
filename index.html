@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monitoramento Florestal — TurboHive</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/flv.js/1.6.2/flv.min.js"></script>
+  <title>Monitoramento Florestal</title>
+  <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -649,7 +649,7 @@ async function startLive() {
 }
 
 function startFlvPlayer(channel, flvUrl) {
-  if (!flvjs.isSupported()) { toast('Use o Chrome para streaming FLV', 'error'); return; }
+  if (!mpegts.isSupported()) { toast('Use o Chrome para streaming FLV', 'error'); return; }
   if (flvPlayers[channel]) { flvPlayers[channel].destroy(); delete flvPlayers[channel]; }
 
   const videoEl = document.getElementById(`video${channel}`);
@@ -660,7 +660,7 @@ function startFlvPlayer(channel, flvUrl) {
   placeholder.style.display = 'none';
   videoEl.style.display = 'block';
 
-  const player = flvjs.createPlayer(
+  const player = mpegts.createPlayer(
     { type: 'flv', url: flvUrl, isLive: true, cors: true },
     { enableWorker: true, enableStashBuffer: false, stashInitialSize: 128, lazyLoad: false }
   );
@@ -668,12 +668,12 @@ function startFlvPlayer(channel, flvUrl) {
   player.load();
   player.play().catch(()=>{});
 
-  player.on(flvjs.Events.MEDIA_INFO, () => {
+  player.on(mpegts.Events.MEDIA_INFO, () => {
     pill?.classList.add('on');
     document.getElementById('streamInfo').style.display = 'block';
     document.getElementById('streamUrlDisplay').textContent = flvUrl;
   });
-  player.on(flvjs.Events.ERROR, (errType) => {
+  player.on(mpegts.Events.ERROR, (errType) => {
     if (placeholder) { placeholder.style.display = 'flex'; placeholder.innerHTML = `<div class="cam-icon">❌</div><div>Falha no stream<br><small>${errType}</small></div>`; }
     if (videoEl) videoEl.style.display = 'none';
     pill?.classList.remove('on');
