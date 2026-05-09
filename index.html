@@ -368,7 +368,7 @@
    CONFIGURAÇÃO IoT Hub
 ═══════════════════════════════════════════════ */
 const API_BASE        = '/api/iothub';   // proxy Netlify → http://178.105.90.63:9080
-const MEDIA_BASE      = '/api/media';    // proxy Netlify → http://178.105.90.63:8881
+const MEDIA_BASE      = location.origin + '/api/media'; // URL absoluta para Web Worker
 const ACCESS_PASSWORD = 'camsec2024';    // ← ALTERE ESTA SENHA
 
 /* ═══════════════════════════════════════════════
