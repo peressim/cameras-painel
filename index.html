@@ -774,13 +774,11 @@ function renderAlerts() {
 
   container.innerHTML = `<div class="alert-list">${list.map(a => {
     const aType = a.type || a.alarmType || '';
-    const meta = alertMeta(aType);
-    const dev  = devMap[a.imei] || {};
+    const meta  = alertMeta(aType);
+    const name  = a.alertName || a.alarmName || aType || 'Alerta';
+    const dev   = devMap[a.imei] || {};
     const rawTime = a.alertTime || a.alarmTime || a.time;
-    const time = rawTime ? new Date(typeof rawTime === 'string' ? parseInt(rawTime) : rawTime).toLocaleString('pt-BR') : '—';
-    const type = a.type || a.alarmType || '';
-    const meta = alertMeta(type);
-    const name = a.alertName || a.alarmName || type || 'Alerta';
+    const time  = rawTime ? new Date(typeof rawTime === 'string' ? parseInt(rawTime) : rawTime).toLocaleString('pt-BR') : '—';
     const levelLabel = meta.level === 'critical' ? 'CRÍTICO' : meta.level === 'warning' ? 'ALERTA' : 'INFO';
     const attachHtml = (a.attachment||[]).map(att => {
       const isImg = att.mediaType === 0;
