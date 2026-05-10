@@ -1868,7 +1868,8 @@ function switchTab(name) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelector(`[data-tab="${name}"]`).classList.add('active');
   document.getElementById(`panel-${name}`).classList.add('active');
-  if (name === 'history') updateHistorySection();
+  if (name === 'history')  updateHistorySection();
+  if (name === 'terminal') refreshTerminalDevices();
 }
 
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
@@ -1988,12 +1989,6 @@ async function sendTerminalCmd() {
   }
 }
 
-// Preencher lista de dispositivos quando a aba é aberta
-const _origSwitchTab = switchTab;
-function switchTab(name) {
-  _origSwitchTab(name);
-  if (name === 'terminal') refreshTerminalDevices();
-}
 </script>
 </body>
 </html>
