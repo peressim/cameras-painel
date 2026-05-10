@@ -1047,6 +1047,7 @@ function loginSuccess() {
   pingServer();
   alertTimer = setInterval(fetchAlerts, 60000);
   setInterval(pingServer, 30000);
+  setInterval(refreshDeviceStatus, 30000); // atualizar status online a cada 30s
 }
 
 function doLogout() {
@@ -1088,15 +1089,7 @@ async function apiFetch(path, method = 'GET', body = null) {
 async function loadDevices() {
   document.getElementById('vehicleList').innerHTML =
     '<div class="loading-row"><div class="spinner"></div>Carregando...</div>';
-  for (const d of manualDevices) {
-    try {
-      const res = await apiFetch('/api/device/status', 'GET', { imei: d.imei });
-      if (res.data !== null && res.data !== undefined) {
-        const data = Array.isArray(res.data) ? res.data[0] : res.data;
-        if (data) d.onlineStatus = data.onlineStatus ?? d.onlineStatus;
-      }
-    } catch {}
-  }
+  await refreshDeviceStatus();
   devices = [];
   renderVehicleList();
   updateStats();
@@ -1105,6 +1098,29 @@ async function loadDevices() {
   } else {
     toast(`${manualDevices.length} veículo(s) carregado(s)`, 'success');
   }
+}
+
+// Atualiza status online/offline de todos os dispositivos
+async function refreshDeviceStatus() {
+  for (const d of manualDevices) {
+    try {
+      const res = await apiFetch('/api/device/status', 'GET', {
+        token: API_TOKEN,
+        imei:  d.imei,
+      });
+      if (res.code === 0 && res.data) {
+        const data = Array.isArray(res.data) ? res.data[0] : res.data;
+        if (data) {
+          // JIMI retorna onlineStatus: 0=desconhecido, 1=online, 2=offline
+          // ou powerStatus/accStatus como indicadores alternativos
+          const status = data.onlineStatus ?? data.powerStatus ?? data.accStatus;
+          if (status !== undefined) d.onlineStatus = Number(status);
+        }
+      }
+    } catch {}
+  }
+  renderVehicleList();
+  updateStats();
 }
 
 function allDevices() { return [...manualDevices]; }
@@ -1450,14 +1466,19 @@ async function fetchAlerts() {
 
 // alertType numérico → metadados de exibição
 const ALERT_TYPE_MAP = {
-  105: { icon:'🎬', label:'Vídeo de Evento',    level:'info'     },
-  134: { icon:'📹', label:'Evento Registrado',   level:'warning'  },
-  1:   { icon:'🆘', label:'SOS',                level:'critical' },
-  2:   { icon:'💥', label:'Colisão',            level:'critical' },
-  3:   { icon:'⚡', label:'Excesso de velocidade', level:'warning' },
-  8:   { icon:'😴', label:'Fadiga do motorista', level:'warning'  },
-  9:   { icon:'🚗', label:'ADAS',               level:'critical' },
-  16:  { icon:'👁', label:'DMS',                level:'warning'  },
+  105: { icon:'🎬', label:'Vídeo de Evento',         level:'info',     desc:'Arquivo de vídeo de evento registrado pela câmera e salvo no cartão de memória.' },
+  134: { icon:'📹', label:'Evento com Múltiplos Canais', level:'warning', desc:'Evento detectado com gravação simultânea de câmera interna e externa.' },
+  1:   { icon:'🆘', label:'SOS',                     level:'critical', desc:'Botão de emergência acionado pelo motorista.' },
+  2:   { icon:'💥', label:'Colisão Detectada',        level:'critical', desc:'Aceleração brusca detectada pelo acelerômetro, possível colisão ou frenagem violenta.' },
+  3:   { icon:'⚡', label:'Excesso de Velocidade',    level:'warning',  desc:'Veículo excedeu o limite de velocidade configurado.' },
+  8:   { icon:'😴', label:'Fadiga do Motorista',      level:'warning',  desc:'Sistema DMS detectou sinais de sonolência ou distração do motorista.' },
+  9:   { icon:'🚘', label:'Alerta ADAS',              level:'critical', desc:'Sistema avançado de assistência ao motorista detectou risco de colisão frontal ou saída de faixa.' },
+  16:  { icon:'👁', label:'Monitoramento DMS',        level:'warning',  desc:'Câmera de monitoramento interno detectou comportamento anormal do motorista.' },
+  17:  { icon:'📵', label:'Uso de Celular',           level:'warning',  desc:'Motorista detectado utilizando celular durante a condução.' },
+  18:  { icon:'🚬', label:'Fumo Detectado',           level:'warning',  desc:'Câmera detectou possível uso de cigarro pelo motorista.' },
+  32:  { icon:'🔋', label:'Tensão Baixa',             level:'warning',  desc:'Tensão da bateria abaixo do nível mínimo recomendado.' },
+  33:  { icon:'🔌', label:'Desconexão de Energia',    level:'critical', desc:'Câmera detectou corte de energia, possível adulteração.' },
+  68:  { icon:'🌡️', label:'Temperatura Alta',         level:'warning',  desc:'Temperatura interna do dispositivo acima do limite seguro.' },
 };
 const ALERT_META = {
   'SOS':       { icon:'🆘', level:'critical' },
@@ -1506,20 +1527,23 @@ function renderAlerts() {
     const time  = rawTime ? new Date(rawTime).toLocaleString('pt-BR') : '—';
     const levelLabel = meta.level === 'critical' ? 'CRÍTICO' : meta.level === 'warning' ? 'ALERTA' : 'INFO';
 
+    // Descrição do tipo de alerta
+    const desc = meta.desc || '';
+
     // Arquivos de vídeo no cartão de memória
-    const files = a.file ? a.file.split(',').filter(Boolean) : [];
+    const files = a.file ? a.file.split(',').map(f => f.trim()).filter(Boolean) : [];
     const filesHtml = files.map(f => {
-      const fname = f.trim();
-      const isInner = fname.includes('_I_');
+      const isInner = f.includes('_I_');
       const label   = isInner ? '🎥 Câmera Interna' : '📷 Câmera Externa';
-      return `<div class="attach-thumb" title="${fname}" style="font-size:11px;padding:4px 8px;width:auto;height:auto;border-radius:6px" onclick="toast('Arquivo: ${fname}','info')">${label}</div>`;
+      return `<button class="btn btn-sm" style="font-size:11px;padding:4px 10px;gap:4px"
+        onclick="openEventVideo('${f}','${a.imei}','${a.alarmTime}')" title="${f}">${label}</button>`;
     }).join('');
 
     // Coordenadas GPS
     const gpsHtml = (a.lat && a.lng)
       ? `<span>📍 <a href="https://maps.google.com/?q=${a.lat},${a.lng}" target="_blank" style="color:var(--accent)">${a.lat.toFixed(5)}, ${a.lng.toFixed(5)}</a></span>`
       : '';
-    const speedHtml = a.gpsSpeed > 0 ? `<span>🚗 ${a.gpsSpeed} km/h</span>` : '';
+    const speedHtml = (a.gpsSpeed > 0) ? `<span>🚗 ${a.gpsSpeed} km/h</span>` : '';
 
     return `
     <div class="alert-card ${a.status===0?'unread':''} ${meta.level}">
@@ -1532,7 +1556,8 @@ function renderAlerts() {
           ${gpsHtml}
           ${speedHtml}
         </div>
-        ${files.length ? `<div class="alert-attachments">${filesHtml}</div>` : ''}
+        ${desc ? `<div class="alert-desc">${desc}</div>` : ''}
+        ${files.length ? `<div class="alert-attachments" style="margin-top:8px">${filesHtml}</div>` : ''}
       </div>
       <div class="alert-right">
         <span class="level-badge ${meta.level}">${levelLabel}</span>
@@ -1560,6 +1585,85 @@ function openMedia(url, fileName, type) {
   document.getElementById('mediaDownloadLink').href = url;
   document.getElementById('mediaDownloadLink').download = fileName;
   openModal('mediaModal');
+}
+
+// Abre vídeo de evento gravado: tenta dvr-upload primeiro, senão solicita da câmera
+async function openEventVideo(fileName, imei, alarmTime) {
+  const dvrUrl = `/api/dvr/${fileName}`;
+  document.getElementById('mediaModalTitle').textContent = '🎬 Vídeo de Evento';
+  document.getElementById('mediaModalBody').innerHTML =
+    `<div style="text-align:center;padding:32px"><div class="spinner"></div><p style="margin-top:12px;color:var(--muted2)">Verificando disponibilidade do vídeo...</p></div>`;
+  document.getElementById('mediaDownloadLink').href = dvrUrl;
+  document.getElementById('mediaDownloadLink').download = fileName;
+  openModal('mediaModal');
+
+  try {
+    const check = await fetch(dvrUrl, { method: 'HEAD' });
+    if (check.ok && check.headers.get('content-length') > 0) {
+      // Arquivo disponível no servidor dvr-upload
+      document.getElementById('mediaModalBody').innerHTML =
+        `<video src="${dvrUrl}" controls autoplay
+          style="max-width:100%;width:100%;border-radius:10px;background:#000;max-height:60vh"></video>`;
+      return;
+    }
+  } catch {}
+
+  // Arquivo não está no servidor — solicitar download da câmera via HVIDEO
+  // Extrai timestamp do nome do arquivo: EVENT_IMEI_00000000_YYYY_MM_DD_HH_MM_SS_*
+  let hvCmd = null;
+  const m = fileName.match(/_(\d{4})_(\d{2})_(\d{2})_(\d{2})_(\d{2})_(\d{2})_/);
+  if (m) {
+    hvCmd = `HVIDEO,${m[1]}_${m[2]}_${m[3]}_${m[4]}_${m[5]}_${m[6]},1`;
+  }
+
+  document.getElementById('mediaModalBody').innerHTML = `
+    <div style="text-align:center;padding:24px">
+      <div style="font-size:48px;margin-bottom:16px">📼</div>
+      <p style="font-weight:600;margin-bottom:8px">Vídeo não está no servidor ainda</p>
+      <p style="font-size:12px;color:var(--muted2);margin-bottom:20px">
+        O arquivo <code style="background:var(--card2);padding:2px 6px;border-radius:4px">${fileName}</code>
+        está no cartão de memória da câmera.<br>
+        Clique abaixo para solicitar o envio ao servidor.
+      </p>
+      ${hvCmd ? `
+      <button class="btn btn-primary" onclick="requestVideoFromCamera('${imei}','${hvCmd}',this)">
+        ⬇ Solicitar Envio da Câmera
+      </button>
+      <p style="font-size:11px;color:var(--muted);margin-top:12px">
+        Após solicitar, o vídeo será processado pela câmera e enviado ao servidor.<br>
+        Aguarde alguns minutos e clique novamente no botão de vídeo.
+      </p>` : `<p style="color:var(--muted2)">Não foi possível determinar o timestamp do arquivo.</p>`}
+    </div>`;
+}
+
+async function requestVideoFromCamera(imei, cmd, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Solicitando...';
+  try {
+    const res = await apiFetch('/api/device/sendInstruct', 'POST', {
+      token:        API_TOKEN,
+      deviceImei:   imei,
+      proNo:        128,
+      cmdType:      128,
+      cmdContent:   cmd,
+      serverFlagId: 1,
+      platform:     0,
+      timeOut:      60,
+      requestId:    'hvideo_' + Date.now(),
+    });
+    if (res.data?._content === 'OK!' || res.code === 0) {
+      btn.textContent = '✓ Solicitado!';
+      toast('Solicitação enviada. Aguarde alguns minutos e tente novamente.', 'success');
+    } else {
+      btn.textContent = '⬇ Solicitar Envio da Câmera';
+      btn.disabled = false;
+      toast('Câmera offline ou sem SD card. Tente quando estiver online.', 'error');
+    }
+  } catch(e) {
+    btn.textContent = '⬇ Solicitar Envio da Câmera';
+    btn.disabled = false;
+    toast('Erro ao enviar comando: ' + e.message, 'error');
+  }
 }
 
 /* ═══════════════════════════════════════════════
