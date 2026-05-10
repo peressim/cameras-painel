@@ -954,6 +954,7 @@
 const API_BASE        = '/api/iothub';
 const MEDIA_BASE      = location.origin + '/api/media'; // URL absoluta para Web Worker
 const ACCESS_PASSWORD = 'camsec2024';
+const API_TOKEN       = 'a12341234123';
 
 /* ═══════════════════════════════════════════════
    ESTADO GLOBAL
@@ -1390,16 +1391,54 @@ async function fetchAlerts() {
   const btn = document.getElementById('btnRefreshAlerts');
   if (btn) btn.disabled = true;
   try {
-    const now   = Date.now();
-    const start = now - 24 * 60 * 60 * 1000;
-    const res = await apiFetch('/api/alarm/getAlarm', 'GET', {
-      startTime: String(start),
-      endTime:   String(now),
-    });
-    if (Array.isArray(res.data))   alertsData = res.data;
-    else if (res.data?.list)       alertsData = res.data.list;
-    else if (res.data?.records)    alertsData = res.data.records;
-    else                           alertsData = [];
+    // JIMI API exige datas no formato "YYYY-MM-DD HH:mm:ss" (não timestamp)
+    const fmtDate = d => d.toISOString().replace('T', ' ').slice(0, 19);
+    const now   = new Date();
+    const start = new Date(now - 7 * 24 * 60 * 60 * 1000); // últimos 7 dias
+
+    const allImeis = allDevices().map(d => d.imei);
+    if (!allImeis.length) { renderAlerts(); return; }
+
+    let combined = [];
+    for (const imei of allImeis) {
+      try {
+        const res = await apiFetch('/api/alarm/getAlarm', 'GET', {
+          token:     API_TOKEN,
+          imei,
+          startTime: fmtDate(start),
+          endTime:   fmtDate(now),
+          pageNo:    1,
+          pageSize:  100,
+        });
+        if (!Array.isArray(res.data)) continue;
+        // alarmMsg é uma string JSON aninhada — precisamos fazer JSON.parse()
+        const parsed = res.data.map(item => {
+          try {
+            const outer = JSON.parse(item.alarmMsg);
+            const msg   = outer.msg || {};
+            return {
+              imei:       outer.imei || msg.deviceImei || imei,
+              type:       String(msg.alertType || ''),
+              alertType:  msg.alertType,
+              alarmTime:  msg.alarmTime || outer.gateTime,
+              gateTime:   outer.gateTime,
+              file:       msg.file || '',       // nome(s) do arquivo no cartão
+              lat:        msg.lat,
+              lng:        msg.lng,
+              gpsSpeed:   msg.gpsSpeed,
+              voltage:    msg.voltage,
+              status:     0,                    // não lido
+            };
+          } catch { return null; }
+        }).filter(Boolean);
+        combined = combined.concat(parsed);
+      } catch(e) {
+        console.warn('[Alertas] imei', imei, e.message);
+      }
+    }
+    // Ordenar do mais recente para o mais antigo
+    combined.sort((a, b) => new Date(b.alarmTime) - new Date(a.alarmTime));
+    alertsData = combined;
     renderAlerts();
     updateStats();
   } catch(e) {
@@ -1409,6 +1448,17 @@ async function fetchAlerts() {
   }
 }
 
+// alertType numérico → metadados de exibição
+const ALERT_TYPE_MAP = {
+  105: { icon:'🎬', label:'Vídeo de Evento',    level:'info'     },
+  134: { icon:'📹', label:'Evento Registrado',   level:'warning'  },
+  1:   { icon:'🆘', label:'SOS',                level:'critical' },
+  2:   { icon:'💥', label:'Colisão',            level:'critical' },
+  3:   { icon:'⚡', label:'Excesso de velocidade', level:'warning' },
+  8:   { icon:'😴', label:'Fadiga do motorista', level:'warning'  },
+  9:   { icon:'🚗', label:'ADAS',               level:'critical' },
+  16:  { icon:'👁', label:'DMS',                level:'warning'  },
+};
 const ALERT_META = {
   'SOS':       { icon:'🆘', level:'critical' },
   'COLLISION': { icon:'💥', level:'critical' },
@@ -1418,16 +1468,20 @@ const ALERT_META = {
   'FATIGUE':   { icon:'😴', level:'warning'  },
   'DEFAULT':   { icon:'⚠️', level:'warning'  },
 };
-function alertMeta(type) {
-  const key = Object.keys(ALERT_META).find(k => (type||'').toUpperCase().includes(k)) || 'DEFAULT';
-  return ALERT_META[key];
+function alertMeta(a) {
+  // Prioridade: alertType numérico → fallback por string
+  if (a.alertType && ALERT_TYPE_MAP[a.alertType]) return ALERT_TYPE_MAP[a.alertType];
+  const type = (a.type || a.alarmType || '');
+  const key  = Object.keys(ALERT_META).find(k => type.toUpperCase().includes(k)) || 'DEFAULT';
+  const m    = ALERT_META[key];
+  return { icon: m.icon, label: key, level: m.level };
 }
 
 function renderAlerts() {
   const container = document.getElementById('alertsContainer');
   let list = [...alertsData];
   if (alertFilter === 'unread')   list = list.filter(a => a.status === 0);
-  if (alertFilter === 'critical') list = list.filter(a => alertMeta(a.type).level === 'critical');
+  if (alertFilter === 'critical') list = list.filter(a => alertMeta(a).level === 'critical');
 
   const unread = alertsData.filter(a => a.status === 0).length;
   const badge  = document.getElementById('alertTabBadge');
@@ -1445,22 +1499,28 @@ function renderAlerts() {
   const devMap = Object.fromEntries(allDevices().map(d => [d.imei, d]));
 
   container.innerHTML = `<div class="alert-list">${list.map(a => {
-    const aType = a.type || a.alarmType || '';
-    const meta  = alertMeta(aType);
-    const name  = a.alertName || a.alarmName || aType || 'Alerta';
+    const meta  = alertMeta(a);
+    const name  = meta.label || a.alertName || a.alarmName || a.type || 'Alerta';
     const dev   = devMap[a.imei] || {};
-    const rawTime = a.alertTime || a.alarmTime || a.time;
-    const time  = rawTime
-      ? new Date(typeof rawTime === 'string' ? parseInt(rawTime) : rawTime).toLocaleString('pt-BR')
-      : '—';
+    const rawTime = a.alarmTime || a.alertTime || a.time;
+    const time  = rawTime ? new Date(rawTime).toLocaleString('pt-BR') : '—';
     const levelLabel = meta.level === 'critical' ? 'CRÍTICO' : meta.level === 'warning' ? 'ALERTA' : 'INFO';
-    const attachHtml = (a.attachment||[]).map(att => {
-      const isImg = att.mediaType === 0;
-      const thumb = att.storagePath
-        ? `<img src="${att.storagePath}" onerror="this.parentNode.innerHTML='📷'" style="width:100%;height:100%;object-fit:cover">`
-        : (isImg ? '📷' : '🎬');
-      return `<div class="attach-thumb" onclick="openMedia('${att.storagePath||''}','${att.fileName||''}',${att.mediaType})" title="${att.fileName||''}">${thumb}</div>`;
+
+    // Arquivos de vídeo no cartão de memória
+    const files = a.file ? a.file.split(',').filter(Boolean) : [];
+    const filesHtml = files.map(f => {
+      const fname = f.trim();
+      const isInner = fname.includes('_I_');
+      const label   = isInner ? '🎥 Câmera Interna' : '📷 Câmera Externa';
+      return `<div class="attach-thumb" title="${fname}" style="font-size:11px;padding:4px 8px;width:auto;height:auto;border-radius:6px" onclick="toast('Arquivo: ${fname}','info')">${label}</div>`;
     }).join('');
+
+    // Coordenadas GPS
+    const gpsHtml = (a.lat && a.lng)
+      ? `<span>📍 <a href="https://maps.google.com/?q=${a.lat},${a.lng}" target="_blank" style="color:var(--accent)">${a.lat.toFixed(5)}, ${a.lng.toFixed(5)}</a></span>`
+      : '';
+    const speedHtml = a.gpsSpeed > 0 ? `<span>🚗 ${a.gpsSpeed} km/h</span>` : '';
+
     return `
     <div class="alert-card ${a.status===0?'unread':''} ${meta.level}">
       <div class="alert-icon-wrap ${meta.level}">${meta.icon}</div>
@@ -1469,11 +1529,10 @@ function renderAlerts() {
         <div class="alert-meta">
           <span>${dev.icon||'📡'} ${dev.deviceName||a.imei}</span>
           <span>🕐 ${time}</span>
-          ${a.location ? `<span>📍 ${a.location}</span>` : ''}
-          ${a.firingStatus ? `<span>${a.firingStatus==='Start'?'🔴':'🟢'} ${a.firingStatus==='Start'?'Início':'Fim'}</span>` : ''}
+          ${gpsHtml}
+          ${speedHtml}
         </div>
-        ${a.description ? `<div class="alert-desc">${a.description}</div>` : ''}
-        ${attachHtml ? `<div class="alert-attachments">${attachHtml}</div>` : ''}
+        ${files.length ? `<div class="alert-attachments">${filesHtml}</div>` : ''}
       </div>
       <div class="alert-right">
         <span class="level-badge ${meta.level}">${levelLabel}</span>
