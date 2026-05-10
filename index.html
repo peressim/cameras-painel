@@ -503,6 +503,32 @@
     }
     .alert-card.unread .unread-dot { display: block; }
 
+    /* ─── TERMINAL ───────────────────────────────── */
+    .terminal-wrap { display: flex; flex-direction: column; gap: 14px; height: 100%; }
+    .terminal-form {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px;
+    }
+    .terminal-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+    .terminal-presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+    .preset-btn {
+      font-size: 11px; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--border2);
+      background: var(--card2); color: var(--text2); cursor: pointer; transition: all .15s;
+    }
+    .preset-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .terminal-log {
+      flex: 1; background: #060e1a; border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px; overflow-y: auto;
+      font-family: 'Fira Code', 'Courier New', monospace; font-size: 12px;
+      display: flex; flex-direction: column; gap: 10px; min-height: 300px;
+    }
+    .tlog-entry { display: flex; flex-direction: column; gap: 3px; }
+    .tlog-ts { font-size: 10px; color: var(--muted); }
+    .tlog-sent { color: #60a5fa; }
+    .tlog-recv { color: #34d399; }
+    .tlog-err  { color: var(--red); }
+    .tlog-info { color: var(--muted2); font-style: italic; }
+
     /* ─── HISTORY ────────────────────────────────── */
     .history-form {
       display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;
@@ -792,6 +818,9 @@
       <button class="tab" data-tab="history" onclick="switchTab('history')">
         <span>📁</span> Histórico
       </button>
+      <button class="tab" data-tab="terminal" onclick="switchTab('terminal')">
+        <span>⌨️</span> Terminal
+      </button>
     </div>
 
     <div class="tab-panels">
@@ -885,6 +914,68 @@
         </div>
       </div>
 
+      <!-- ── TERMINAL ── -->
+      <div class="panel" id="panel-terminal">
+        <div class="panel-toolbar">
+          <div class="panel-title">⌨️ Terminal de Comandos</div>
+          <button class="btn btn-sm btn-icon" onclick="clearTerminalLog()" title="Limpar log">🗑</button>
+        </div>
+        <div class="terminal-wrap">
+          <div class="terminal-form">
+            <div class="terminal-row">
+              <div class="form-field" style="flex:1;min-width:160px">
+                <label>Dispositivo</label>
+                <select class="inp" id="termImei">
+                  <option value="">— selecione —</option>
+                </select>
+              </div>
+              <div class="form-field" style="width:110px">
+                <label>proNo</label>
+                <select class="inp" id="termProNo">
+                  <option value="128">128 — Vídeo/Controle</option>
+                  <option value="-128">-128 — Texto/SMS</option>
+                  <option value="19">19 — Protocolo v1</option>
+                </select>
+              </div>
+              <div class="form-field" style="width:130px">
+                <label>cmdType</label>
+                <input class="inp" id="termCmdType" value="128" placeholder="128 ou normalIns">
+              </div>
+              <div class="form-field" style="width:70px">
+                <label>Timeout (s)</label>
+                <input class="inp" id="termTimeout" value="60" type="number" min="5" max="120">
+              </div>
+            </div>
+            <div class="form-field">
+              <label>Conteúdo do Comando</label>
+              <div class="terminal-row" style="align-items:flex-start">
+                <textarea class="inp" id="termCmd" rows="2"
+                  style="flex:1;resize:vertical;font-family:monospace;font-size:13px"
+                  placeholder="Ex: RTMP,ON,INOUT"></textarea>
+                <button class="btn btn-primary" onclick="sendTerminalCmd()" id="btnTermSend"
+                  style="align-self:stretch;min-width:90px">▶ Enviar</button>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Comandos Rápidos</div>
+              <div class="terminal-presets">
+                <button class="preset-btn" onclick="fillPreset('128','128','RTMP,ON,INOUT')">▶ Live ON</button>
+                <button class="preset-btn" onclick="fillPreset('128','128','RTMP,OFF')">⏹ Live OFF</button>
+                <button class="preset-btn" onclick="fillPreset('128','128','PARAM')">📋 Parâmetros</button>
+                <button class="preset-btn" onclick="fillPreset('128','128','REBOOT')">🔄 Reboot</button>
+                <button class="preset-btn" onclick="fillPreset('-128','normalIns','RSERVICE,RTMP,ON,rtmp://178.105.90.63:1935/live')">📡 RSERVICE 1935</button>
+                <button class="preset-btn" onclick="fillPreset('-128','normalIns','CONNECT')">🔌 CONNECT</button>
+                <button class="preset-btn" onclick="fillPreset('128','128','HVIDEO,2026_05_10_00_00_00,1')">🎬 HVIDEO</button>
+                <button class="preset-btn" onclick="fillPreset('-128','normalIns','JMLIVE,ON,0,0,0')">📹 JMLIVE</button>
+              </div>
+            </div>
+          </div>
+          <div class="terminal-log" id="termLog">
+            <div class="tlog-info">Terminal pronto. Selecione um dispositivo e envie um comando.</div>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /tab-panels -->
   </main>
 </div><!-- /layout -->
@@ -955,6 +1046,20 @@ const API_BASE        = '/api/iothub';
 const MEDIA_BASE      = location.origin + '/api/media'; // URL absoluta para Web Worker
 const ACCESS_PASSWORD = 'camsec2024';
 const API_TOKEN       = 'a12341234123';
+const TZ              = 'America/Sao_Paulo'; // GMT-3
+
+// Formata Date → string "YYYY-MM-DD HH:mm:ss" no fuso GMT-3 (para API JIMI)
+function fmtGMT3(d) {
+  return d.toLocaleString('sv-SE', { timeZone: TZ }).replace('T', ' ').slice(0, 19);
+}
+
+// Converte string da API JIMI (assumida em GMT-3) → string legível pt-BR
+function jimiTimeToLocal(str) {
+  if (!str) return '—';
+  // Trata "YYYY-MM-DD HH:mm:ss" como GMT-3 e exibe no fuso do Brasil
+  const iso = str.trim().replace(' ', 'T') + '-03:00';
+  return new Date(iso).toLocaleString('pt-BR', { timeZone: TZ });
+}
 
 /* ═══════════════════════════════════════════════
    ESTADO GLOBAL
@@ -1407,8 +1512,7 @@ async function fetchAlerts() {
   const btn = document.getElementById('btnRefreshAlerts');
   if (btn) btn.disabled = true;
   try {
-    // JIMI API exige datas no formato "YYYY-MM-DD HH:mm:ss" (não timestamp)
-    const fmtDate = d => d.toISOString().replace('T', ' ').slice(0, 19);
+    // JIMI API exige datas no formato "YYYY-MM-DD HH:mm:ss" no fuso GMT-3
     const now   = new Date();
     const start = new Date(now - 7 * 24 * 60 * 60 * 1000); // últimos 7 dias
 
@@ -1421,8 +1525,8 @@ async function fetchAlerts() {
         const res = await apiFetch('/api/alarm/getAlarm', 'GET', {
           token:     API_TOKEN,
           imei,
-          startTime: fmtDate(start),
-          endTime:   fmtDate(now),
+          startTime: fmtGMT3(start),
+          endTime:   fmtGMT3(now),
           pageNo:    1,
           pageSize:  100,
         });
@@ -1524,7 +1628,7 @@ function renderAlerts() {
     const name  = meta.label || a.alertName || a.alarmName || a.type || 'Alerta';
     const dev   = devMap[a.imei] || {};
     const rawTime = a.alarmTime || a.alertTime || a.time;
-    const time  = rawTime ? new Date(rawTime).toLocaleString('pt-BR') : '—';
+    const time  = jimiTimeToLocal(rawTime);
     const levelLabel = meta.level === 'critical' ? 'CRÍTICO' : meta.level === 'warning' ? 'ALERTA' : 'INFO';
 
     // Descrição do tipo de alerta
@@ -1789,6 +1893,106 @@ function toast(msg, type = 'info') {
   el.className = `show ${type}`;
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => { el.className = ''; }, 3500);
+}
+
+/* ═══════════════════════════════════════════════
+   TERMINAL DE COMANDOS
+═══════════════════════════════════════════════ */
+let termReqId = 1;
+
+function refreshTerminalDevices() {
+  const sel = document.getElementById('termImei');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— selecione —</option>' +
+    allDevices().map(d =>
+      `<option value="${d.imei}" ${d.imei===cur?'selected':''}>
+        ${d.deviceName||d.imei} (${d.imei})
+      </option>`
+    ).join('');
+}
+
+function fillPreset(proNo, cmdType, cmd) {
+  document.getElementById('termProNo').value  = proNo;
+  document.getElementById('termCmdType').value = cmdType;
+  document.getElementById('termCmd').value    = cmd;
+  document.getElementById('termCmd').focus();
+}
+
+function termLog(type, html) {
+  const log  = document.getElementById('termLog');
+  const now  = new Date().toLocaleString('pt-BR', { timeZone: TZ });
+  const entry = document.createElement('div');
+  entry.className = 'tlog-entry';
+  entry.innerHTML = `<span class="tlog-ts">${now}</span><span class="tlog-${type}">${html}</span>`;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+function clearTerminalLog() {
+  const log = document.getElementById('termLog');
+  log.innerHTML = '<div class="tlog-info">Log limpo.</div>';
+}
+
+async function sendTerminalCmd() {
+  const imei    = document.getElementById('termImei').value;
+  const proNo   = document.getElementById('termProNo').value;
+  const cmdType = document.getElementById('termCmdType').value;
+  const cmd     = document.getElementById('termCmd').value.trim();
+  const timeout = parseInt(document.getElementById('termTimeout').value) || 60;
+
+  if (!imei) { toast('Selecione um dispositivo', 'error'); return; }
+  if (!cmd)  { toast('Informe o comando', 'error'); return; }
+
+  const btn = document.getElementById('btnTermSend');
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  const reqId = `term_${termReqId++}`;
+  termLog('sent', `→ [proNo=${proNo} cmdType=${cmdType}] <strong>${cmd}</strong>`);
+
+  try {
+    const res = await apiFetch('/api/device/sendInstruct', 'POST', {
+      token:        API_TOKEN,
+      deviceImei:   imei,
+      proNo:        proNo,
+      cmdType:      cmdType,
+      cmdContent:   cmd,
+      serverFlagId: 1,
+      platform:     0,
+      timeOut:      timeout,
+      requestId:    reqId,
+    });
+
+    const d = res.data || {};
+    const code    = d._code || res.code;
+    const content = d._content || d._msg || res.msg || '';
+    const msgText = content ? ` — <em>${content}</em>` : '';
+
+    if (code == 100 && content.includes('OK')) {
+      termLog('recv', `✓ code=${code}${msgText}`);
+    } else if (code == 600) {
+      termLog('recv', `📥 code=600 — Offline, comando armazenado${msgText}`);
+    } else if (code == 302) {
+      termLog('recv', `⏳ code=302 — Câmera ocupada${msgText}`);
+    } else if (code == 100) {
+      termLog('recv', `↩ code=100${msgText}`);
+    } else {
+      termLog('recv', `⚠ code=${code}${msgText}`);
+    }
+  } catch(e) {
+    termLog('err', `✗ Erro: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ Enviar';
+  }
+}
+
+// Preencher lista de dispositivos quando a aba é aberta
+const _origSwitchTab = switchTab;
+function switchTab(name) {
+  _origSwitchTab(name);
+  if (name === 'terminal') refreshTerminalDevices();
 }
 </script>
 </body>
