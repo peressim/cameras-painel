@@ -3,312 +3,882 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monitoramento Florestal</title>
+  <title>CamSec — Monitoramento Florestal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     :root {
-      --bg:      #0b1220;
-      --surface: #131f35;
-      --card:    #1a2944;
-      --border:  #243556;
-      --accent:  #2563eb;
-      --green:   #22c55e;
-      --red:     #ef4444;
-      --orange:  #f97316;
-      --text:    #e2e8f0;
-      --muted:   #64748b;
-      --sidebar-w: 264px;
+      --bg:       #07101f;
+      --surface:  #0c1929;
+      --card:     #111f34;
+      --card2:    #162440;
+      --border:   #1c2e4a;
+      --border2:  #243756;
+      --accent:   #3b82f6;
+      --accent-d: #2563eb;
+      --indigo:   #6366f1;
+      --green:    #10b981;
+      --red:      #ef4444;
+      --orange:   #f59e0b;
+      --yellow:   #eab308;
+      --text:     #f1f5f9;
+      --text2:    #cbd5e1;
+      --muted:    #64748b;
+      --muted2:   #94a3b8;
+      --sidebar-w: 272px;
+      --header-h:  60px;
+      --stats-h:   72px;
     }
-    html, body { height: 100%; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; overflow: hidden; }
 
-    /* HEADER */
-    header { display: flex; align-items: center; justify-content: space-between; padding: 0 20px; height: 56px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-    .logo { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; }
-    .logo-badge { background: var(--accent); color: white; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; letter-spacing: .5px; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── SCROLLBAR ─────────────────────────────── */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    /* ─── LOGIN ─────────────────────────────────── */
+    #loginScreen {
+      position: fixed; inset: 0; z-index: 300;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(59,130,246,.18) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 90% 110%, rgba(99,102,241,.12) 0%, transparent 60%);
+    }
+    .login-wrap {
+      width: 400px; max-width: 95vw;
+    }
+    .login-brand {
+      text-align: center; margin-bottom: 32px;
+    }
+    .login-logo {
+      width: 56px; height: 56px; border-radius: 16px;
+      background: linear-gradient(135deg, var(--accent), var(--indigo));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; margin: 0 auto 14px;
+      box-shadow: 0 8px 32px rgba(59,130,246,.35);
+    }
+    .login-brand h1 { font-size: 22px; font-weight: 800; letter-spacing: -.3px; }
+    .login-brand p  { font-size: 13px; color: var(--muted2); margin-top: 4px; }
+    .login-box {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.5);
+    }
+    .login-error {
+      background: rgba(239,68,68,.1);
+      border: 1px solid rgba(239,68,68,.3);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 12.5px;
+      color: var(--red);
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    /* ─── HEADER ─────────────────────────────────── */
+    header {
+      height: var(--header-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 20px;
+      justify-content: space-between;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .logo-icon {
+      width: 32px; height: 32px; border-radius: 9px;
+      background: linear-gradient(135deg, var(--accent), var(--indigo));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      box-shadow: 0 2px 12px rgba(59,130,246,.3);
+    }
+    .logo-text { font-size: 15px; font-weight: 800; letter-spacing: -.3px; }
+    .logo-tag {
+      background: rgba(59,130,246,.15);
+      color: var(--accent);
+      font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 5px;
+      letter-spacing: .5px; border: 1px solid rgba(59,130,246,.2);
+    }
+    .header-center { flex: 1; display: flex; justify-content: center; }
+    .server-status {
+      display: flex; align-items: center; gap: 7px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 5px 12px;
+      font-size: 11px; color: var(--muted2);
+      cursor: default;
+    }
+    .server-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--muted);
+      transition: background .3s;
+    }
+    .server-dot.ok { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .server-dot.err { background: var(--red); box-shadow: 0 0 6px var(--red); }
     .header-right { display: flex; align-items: center; gap: 10px; }
-    .user-pill { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--muted); display: none; }
-    .user-pill.visible { display: block; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 5px; }
-    .status-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .clock-badge {
+      font-size: 12px; font-weight: 600; color: var(--muted2);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .3px;
+    }
+    .user-chip {
+      display: none; align-items: center; gap: 8px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 5px 12px; font-size: 12px;
+    }
+    .user-chip.visible { display: flex; }
+    .user-avatar {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--indigo));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: white;
+    }
 
-    /* LAYOUT */
+    /* ─── STATS BAR ──────────────────────────────── */
+    .stats-bar {
+      height: var(--stats-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: none; align-items: center;
+      padding: 0 20px; gap: 12px;
+      flex-shrink: 0;
+    }
+    .stats-bar.visible { display: flex; }
+    .stat-card {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 10px 16px;
+      min-width: 150px;
+      transition: border-color .2s;
+    }
+    .stat-card:hover { border-color: var(--border2); }
+    .stat-icon {
+      width: 34px; height: 34px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .stat-icon.blue   { background: rgba(59,130,246,.15); }
+    .stat-icon.green  { background: rgba(16,185,129,.15); }
+    .stat-icon.red    { background: rgba(239,68,68,.15); }
+    .stat-body {}
+    .stat-val { font-size: 20px; font-weight: 800; line-height: 1; }
+    .stat-val.green-txt { color: var(--green); }
+    .stat-val.red-txt   { color: var(--red); }
+    .stat-val.blue-txt  { color: var(--accent); }
+    .stat-lbl { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+
+    /* ─── LAYOUT ─────────────────────────────────── */
     .layout { display: flex; flex: 1; overflow: hidden; }
 
-    /* SIDEBAR */
-    aside { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
-    .sidebar-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    /* ─── SIDEBAR ────────────────────────────────── */
+    aside {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden; flex-shrink: 0;
+    }
+    .sidebar-top {
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .sidebar-head {
+      display: flex; align-items: center; justify-content: space-between;
+    }
     .sidebar-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
-    .vehicle-list { flex: 1; overflow-y: auto; padding: 6px 8px; }
-    .vehicle-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; cursor: pointer; margin-bottom: 2px; transition: background .15s; position: relative; }
-    .vehicle-item:hover { background: var(--card); }
-    .vehicle-item.active { background: var(--accent); }
-    .vehicle-icon { font-size: 18px; flex-shrink: 0; }
+    .sidebar-count { font-size: 11px; color: var(--muted); }
+    .search-box {
+      position: relative;
+    }
+    .search-box input {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 7px 10px 7px 32px;
+      font-size: 12px;
+      font-family: inherit;
+      transition: border-color .2s;
+    }
+    .search-box input:focus { outline: none; border-color: var(--accent); }
+    .search-box input::placeholder { color: var(--muted); }
+    .search-icon {
+      position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      font-size: 12px; color: var(--muted); pointer-events: none;
+    }
+    .vehicle-list { flex: 1; overflow-y: auto; padding: 8px; }
+    .vehicle-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 10px; border-radius: 10px;
+      cursor: pointer; margin-bottom: 3px;
+      transition: background .15s, border-color .15s;
+      border: 1px solid transparent;
+      position: relative;
+    }
+    .vehicle-item:hover { background: var(--card); border-color: var(--border); }
+    .vehicle-item.active {
+      background: rgba(59,130,246,.15);
+      border-color: rgba(59,130,246,.3);
+    }
+    .v-icon-wrap {
+      width: 36px; height: 36px; border-radius: 9px;
+      background: var(--card2); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+      transition: background .15s;
+    }
+    .vehicle-item.active .v-icon-wrap { background: rgba(59,130,246,.2); border-color: rgba(59,130,246,.3); }
     .vehicle-info { flex: 1; min-width: 0; }
     .vehicle-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .vehicle-sub { font-size: 10px; color: var(--muted); font-family: monospace; }
-    .vehicle-item.active .vehicle-sub { color: rgba(255,255,255,.55); }
-    .online-badge { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; flex-shrink: 0; }
-    .online-badge.on  { background: rgba(34,197,94,.2);  color: var(--green); }
-    .online-badge.off { background: rgba(100,116,139,.2); color: var(--muted); }
-    .online-badge.idle { background: rgba(234,179,8,.2); color: #eab308; }
-    .vehicle-del { opacity: 0; background: rgba(239,68,68,.15); border: none; color: var(--red); border-radius: 4px; padding: 2px 5px; cursor: pointer; font-size: 11px; transition: opacity .15s; }
-    .vehicle-item:hover .vehicle-del { opacity: 1; }
-    .sidebar-actions { padding: 10px; display: flex; gap: 6px; flex-direction: column; border-top: 1px solid var(--border); }
+    .vehicle-sub  { font-size: 10px; color: var(--muted); font-family: 'Courier New', monospace; margin-top: 2px; }
+    .vehicle-item.active .vehicle-sub { color: rgba(148,163,184,.7); }
+    .status-pip {
+      width: 8px; height: 8px; border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--muted);
+    }
+    .status-pip.on  { background: var(--green); box-shadow: 0 0 5px var(--green); }
+    .status-pip.off { background: var(--muted); }
+    .status-pip.idle { background: var(--yellow); box-shadow: 0 0 5px var(--yellow); }
+    .v-del {
+      opacity: 0; background: rgba(239,68,68,.12);
+      border: 1px solid rgba(239,68,68,.25);
+      color: var(--red); border-radius: 6px;
+      padding: 3px 6px; cursor: pointer; font-size: 10px;
+      transition: opacity .15s; line-height: 1;
+    }
+    .vehicle-item:hover .v-del { opacity: 1; }
+    .sidebar-bottom {
+      padding: 10px;
+      border-top: 1px solid var(--border);
+    }
 
-    /* MAIN */
+    /* ─── MAIN ───────────────────────────────────── */
     main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-    .tabs { display: flex; gap: 2px; padding: 12px 20px 0; border-bottom: 1px solid var(--border); background: var(--surface); }
-    .tab { padding: 8px 18px; border-radius: 8px 8px 0 0; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--muted); border: 1px solid transparent; border-bottom: none; transition: all .15s; background: transparent; }
-    .tab:hover { color: var(--text); }
-    .tab.active { background: var(--bg); color: var(--text); border-color: var(--border); border-bottom-color: var(--bg); }
-    .tab-badge { background: var(--red); color: white; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 999px; margin-left: 4px; }
+
+    /* ─── TABS ───────────────────────────────────── */
+    .tabs-wrap {
+      padding: 0 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      gap: 4px; flex-shrink: 0;
+    }
+    .tab {
+      padding: 16px 16px 14px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; color: var(--muted);
+      border: none; background: transparent;
+      font-family: inherit;
+      border-bottom: 2px solid transparent;
+      transition: color .15s, border-color .15s;
+      display: flex; align-items: center; gap: 6px;
+      white-space: nowrap;
+    }
+    .tab:hover { color: var(--text2); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-badge {
+      background: var(--red); color: white;
+      font-size: 10px; font-weight: 700;
+      padding: 2px 6px; border-radius: 999px;
+      min-width: 18px; text-align: center;
+    }
+
+    /* ─── PANELS ─────────────────────────────────── */
     .tab-panels { flex: 1; overflow: hidden; position: relative; }
-    .panel { position: absolute; inset: 0; display: none; overflow-y: auto; padding: 20px; }
+    .panel {
+      position: absolute; inset: 0;
+      display: none; overflow-y: auto;
+      padding: 20px;
+    }
     .panel.active { display: flex; flex-direction: column; gap: 16px; }
 
-    /* LIVE PANEL */
-    .no-vehicle-msg { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); gap: 10px; font-size: 14px; }
-    .no-vehicle-msg .big-icon { font-size: 48px; }
-    .live-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-    .live-title { display: flex; align-items: center; gap: 10px; }
-    .live-title h2 { font-size: 17px; font-weight: 700; }
-    .live-controls { display: flex; gap: 8px; align-items: center; }
-    .cam-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    @media(max-width:900px){ .cam-grid{ grid-template-columns:1fr; } }
-    .cam-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-    .cam-label { padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-    .live-pill { background: var(--red); color: white; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px; display: none; }
-    .live-pill.on { display: inline-block; animation: blink 1.4s infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.45} }
-    .cam-video-wrap { background: #000; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; position: relative; }
-    video { width: 100%; height: 100%; }
-    .cam-placeholder { color: var(--muted); font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 12px; }
-    .cam-placeholder .cam-icon { font-size: 36px; }
-    .stream-info { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 11px; color: var(--muted); display: none; }
-    .stream-info code { font-family: monospace; color: var(--text); word-break: break-all; }
+    /* ─── EMPTY STATE ────────────────────────────── */
+    .empty-state-big {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: var(--muted); gap: 12px;
+    }
+    .esb-icon {
+      width: 72px; height: 72px; border-radius: 20px;
+      background: var(--card); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; margin-bottom: 4px;
+    }
+    .esb-title { font-size: 15px; font-weight: 600; color: var(--text2); }
+    .esb-sub { font-size: 13px; color: var(--muted); }
 
-    /* ALERTS PANEL */
-    .panel-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; flex-shrink: 0; }
-    .panel-toolbar h2 { font-size: 16px; font-weight: 700; }
-    .filter-row { display: flex; gap: 6px; align-items: center; }
-    .filter-btn { padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all .15s; }
-    .filter-btn:hover, .filter-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+    /* ─── LIVE PANEL ─────────────────────────────── */
+    .live-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .live-title-wrap { display: flex; align-items: center; gap: 12px; }
+    .live-vehicle-icon {
+      width: 42px; height: 42px; border-radius: 11px;
+      background: var(--card2); border: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .live-vehicle-name { font-size: 18px; font-weight: 800; letter-spacing: -.3px; }
+    .live-vehicle-imei { font-size: 11px; color: var(--muted); font-family: monospace; margin-top: 2px; }
+    .live-status-badge {
+      font-size: 11px; font-weight: 700;
+      padding: 3px 10px; border-radius: 20px;
+    }
+    .live-status-badge.on   { background: rgba(16,185,129,.15); color: var(--green); border: 1px solid rgba(16,185,129,.3); }
+    .live-status-badge.off  { background: rgba(100,116,139,.15); color: var(--muted); border: 1px solid var(--border); }
+    .live-status-badge.idle { background: rgba(234,179,8,.15); color: var(--yellow); border: 1px solid rgba(234,179,8,.3); }
+    .live-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .channel-selector { display: flex; gap: 5px; }
+    .ch-btn {
+      padding: 6px 12px; border-radius: 8px;
+      font-size: 12px; font-weight: 600;
+      border: 1px solid var(--border2);
+      background: transparent; color: var(--muted);
+      cursor: pointer; transition: all .15s; font-family: inherit;
+    }
+    .ch-btn:hover { color: var(--text2); border-color: var(--border2); background: var(--card); }
+    .ch-btn.active { background: rgba(59,130,246,.15); border-color: rgba(59,130,246,.4); color: var(--accent); }
+
+    /* ─── CAM GRID ───────────────────────────────── */
+    .cam-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media(max-width:900px){ .cam-grid { grid-template-columns: 1fr; } }
+    .cam-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden;
+      transition: border-color .2s;
+    }
+    .cam-card:hover { border-color: var(--border2); }
+    .cam-label {
+      padding: 10px 14px;
+      font-size: 12px; font-weight: 600; color: var(--muted2);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(255,255,255,.02);
+    }
+    .cam-label-left { display: flex; align-items: center; gap: 8px; }
+    .cam-label-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+    .cam-label-dot.live { background: var(--red); box-shadow: 0 0 5px var(--red); animation: blink 1.4s infinite; }
+    .live-pill-text {
+      background: var(--red); color: white;
+      font-size: 9px; font-weight: 800;
+      padding: 2px 7px; border-radius: 4px;
+      display: none; letter-spacing: .5px;
+      animation: blink 1.4s infinite;
+    }
+    .live-pill-text.on { display: inline-block; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .cam-video-wrap {
+      background: #000; aspect-ratio: 16/9;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .cam-video-wrap:hover .cam-overlay { opacity: 1; }
+    .cam-overlay {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 10px 12px;
+      background: linear-gradient(transparent, rgba(0,0,0,.7));
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 6px; opacity: 0; transition: opacity .2s;
+    }
+    .overlay-btn {
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.2);
+      color: white; border-radius: 6px;
+      padding: 4px 8px; font-size: 11px; cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: background .15s; font-family: inherit;
+    }
+    .overlay-btn:hover { background: rgba(255,255,255,.3); }
+    video { width: 100%; height: 100%; object-fit: contain; }
+    .cam-placeholder {
+      color: var(--muted); font-size: 12px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 10px; text-align: center; padding: 20px;
+    }
+    .cam-placeholder .cam-icon { font-size: 40px; opacity: .5; }
+    .cam-placeholder .cam-hint { font-size: 11px; color: var(--muted); }
+
+    .stream-info {
+      background: rgba(16,185,129,.06);
+      border: 1px solid rgba(16,185,129,.2);
+      border-radius: 10px; padding: 10px 16px;
+      font-size: 11px; color: var(--muted2); display: none;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .stream-info code { font-family: monospace; color: var(--green); word-break: break-all; }
+
+    /* ─── ALERTS ─────────────────────────────────── */
+    .panel-toolbar {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap; gap: 10px; flex-shrink: 0;
+    }
+    .panel-title { font-size: 16px; font-weight: 800; letter-spacing: -.2px; }
+    .filter-row { display: flex; gap: 5px; align-items: center; }
+    .filter-btn {
+      padding: 5px 13px; border-radius: 8px;
+      font-size: 12px; font-weight: 600;
+      border: 1px solid var(--border);
+      background: transparent; color: var(--muted);
+      cursor: pointer; transition: all .15s; font-family: inherit;
+    }
+    .filter-btn:hover { color: var(--text2); background: var(--card); }
+    .filter-btn.active { background: rgba(59,130,246,.15); border-color: rgba(59,130,246,.3); color: var(--accent); }
     .alert-list { display: flex; flex-direction: column; gap: 8px; }
-    .alert-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; display: flex; align-items: flex-start; gap: 12px; transition: border-color .15s; }
-    .alert-card:hover { border-color: var(--accent); }
-    .alert-card.unread { border-left: 3px solid var(--red); }
-    .alert-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+    .alert-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 16px;
+      display: flex; align-items: flex-start; gap: 14px;
+      transition: border-color .15s, background .15s;
+      border-left: 3px solid transparent;
+    }
+    .alert-card:hover { background: var(--card2); border-color: var(--border2); }
+    .alert-card.unread.critical { border-left-color: var(--red); }
+    .alert-card.unread.warning  { border-left-color: var(--orange); }
+    .alert-card.unread.info     { border-left-color: var(--accent); }
+    .alert-icon-wrap {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0; margin-top: 1px;
+    }
+    .alert-icon-wrap.critical { background: rgba(239,68,68,.12); }
+    .alert-icon-wrap.warning  { background: rgba(245,158,11,.12); }
+    .alert-icon-wrap.info     { background: rgba(59,130,246,.12); }
     .alert-body { flex: 1; min-width: 0; }
-    .alert-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
-    .alert-meta { font-size: 11px; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
-    .alert-attachments { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-    .attach-thumb { width: 64px; height: 48px; border-radius: 5px; overflow: hidden; background: #000; border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: border-color .15s; }
-    .attach-thumb:hover { border-color: var(--accent); }
+    .alert-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .alert-meta {
+      font-size: 11px; color: var(--muted);
+      display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 6px;
+    }
+    .alert-meta span { display: flex; align-items: center; gap: 4px; }
+    .alert-desc { font-size: 11.5px; color: var(--muted2); margin-top: 2px; }
+    .alert-attachments { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .attach-thumb {
+      width: 68px; height: 52px; border-radius: 7px;
+      overflow: hidden; background: #000;
+      border: 1px solid var(--border2); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; transition: border-color .15s, transform .15s;
+    }
+    .attach-thumb:hover { border-color: var(--accent); transform: scale(1.05); }
     .attach-thumb img { width: 100%; height: 100%; object-fit: cover; }
-    .alert-actions { display: flex; gap: 6px; align-items: flex-start; flex-wrap: wrap; }
-    .alert-level { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
-    .level-critical { background: rgba(239,68,68,.2); color: var(--red); border: 1px solid var(--red); }
-    .level-warning  { background: rgba(249,115,22,.2); color: var(--orange); border: 1px solid var(--orange); }
-    .level-info     { background: rgba(37,99,235,.15); color: #60a5fa; border: 1px solid #60a5fa; }
+    .alert-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+    .level-badge {
+      font-size: 10px; font-weight: 700;
+      padding: 3px 9px; border-radius: 5px;
+      white-space: nowrap;
+    }
+    .level-badge.critical { background: rgba(239,68,68,.15); color: var(--red); border: 1px solid rgba(239,68,68,.25); }
+    .level-badge.warning  { background: rgba(245,158,11,.15); color: var(--orange); border: 1px solid rgba(245,158,11,.25); }
+    .level-badge.info     { background: rgba(59,130,246,.15); color: #60a5fa; border: 1px solid rgba(59,130,246,.25); }
+    .unread-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent); display: none;
+    }
+    .alert-card.unread .unread-dot { display: block; }
 
-    /* HISTORY PANEL */
-    .history-form { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .inp { background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 7px 12px; font-size: 13px; }
-    .inp:focus { outline: none; border-color: var(--accent); }
+    /* ─── HISTORY ────────────────────────────────── */
+    .history-form {
+      display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px;
+    }
+    .form-field { display: flex; flex-direction: column; gap: 5px; }
+    .form-field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
     .file-list { display: flex; flex-direction: column; gap: 8px; }
-    .file-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
-    .file-icon { font-size: 22px; }
+    .file-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 16px;
+      display: flex; align-items: center; gap: 14px;
+      transition: border-color .15s;
+    }
+    .file-card:hover { border-color: var(--border2); }
+    .file-icon-wrap {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.2);
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
     .file-info { flex: 1; }
-    .file-name { font-size: 12px; font-weight: 600; font-family: monospace; }
-    .file-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .file-name { font-size: 12px; font-weight: 600; font-family: monospace; color: var(--text2); }
+    .file-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
 
-    /* BUTTONS */
-    .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-    .btn-green  { background: var(--green); color: #000; }
-    .btn-green:hover { filter: brightness(1.1); }
-    .btn-red    { background: var(--red); color: white; }
+    /* ─── INPUTS ─────────────────────────────────── */
+    .inp {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 9px; color: var(--text);
+      padding: 8px 12px; font-size: 13px;
+      font-family: inherit; transition: border-color .2s;
+    }
+    .inp:focus { outline: none; border-color: var(--accent); }
+    .inp::placeholder { color: var(--muted); }
+    select.inp option { background: var(--card); }
+
+    /* ─── BUTTONS ────────────────────────────────── */
+    .btn {
+      padding: 8px 16px; border-radius: 9px;
+      font-size: 13px; font-weight: 600;
+      border: none; cursor: pointer;
+      transition: all .15s;
+      display: inline-flex; align-items: center; gap: 6px;
+      white-space: nowrap; font-family: inherit;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 2px 12px rgba(59,130,246,.3);
+    }
+    .btn-primary:hover { background: var(--accent-d); box-shadow: 0 4px 18px rgba(59,130,246,.4); }
+    .btn-green {
+      background: var(--green); color: #000;
+      box-shadow: 0 2px 10px rgba(16,185,129,.25);
+    }
+    .btn-green:hover { filter: brightness(1.1); box-shadow: 0 4px 16px rgba(16,185,129,.35); }
+    .btn-red { background: var(--red); color: white; }
     .btn-red:hover { filter: brightness(1.1); }
-    .btn-ghost  { background: var(--card); color: var(--text); border: 1px solid var(--border); }
-    .btn-ghost:hover { background: var(--border); }
-    .btn-accent { background: var(--accent); color: white; }
-    .btn-accent:hover { filter: brightness(1.15); }
-    .btn-sm { padding: 5px 11px; font-size: 12px; }
+    .btn-ghost {
+      background: var(--card); color: var(--text2);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--card2); border-color: var(--border2); }
+    .btn-icon {
+      background: var(--card); color: var(--muted2);
+      border: 1px solid var(--border);
+      padding: 7px 10px; border-radius: 9px;
+    }
+    .btn-icon:hover { background: var(--card2); color: var(--text); }
+    .btn-sm { padding: 5px 11px; font-size: 12px; border-radius: 7px; }
     .btn:disabled { opacity: .4; cursor: not-allowed; }
 
-    /* MODALS */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 100; align-items: center; justify-content: center; }
+    /* ─── MODALS ─────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.7); z-index: 200;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+    }
     .modal-overlay.open { display: flex; }
-    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; width: 460px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
-    .modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 18px; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 18px; padding: 26px;
+      width: 470px; max-width: 95vw; max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 80px rgba(0,0,0,.6);
+    }
+    .modal-header { margin-bottom: 20px; }
+    .modal-title { font-size: 17px; font-weight: 800; letter-spacing: -.2px; }
+    .modal-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
     .form-group { margin-bottom: 14px; }
-    .form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .5px; }
+    .form-group label {
+      display: block; font-size: 10px; font-weight: 700;
+      color: var(--muted); margin-bottom: 6px;
+      text-transform: uppercase; letter-spacing: .5px;
+    }
     .form-group .inp { width: 100%; }
     .form-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
-    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+    .modal-footer {
+      display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px;
+      padding-top: 16px; border-top: 1px solid var(--border);
+    }
     .divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
 
-    /* LOGIN SCREEN */
-    #loginScreen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 200; }
-    .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 380px; max-width: 95vw; }
-    .login-box h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-    .login-box p { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
-    .login-error { background: rgba(239,68,68,.1); border: 1px solid var(--red); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--red); margin-bottom: 14px; display: none; }
-
-    /* MISC */
+    /* ─── MISC ───────────────────────────────────── */
     .empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
     .empty-state .e-icon { font-size: 40px; margin-bottom: 12px; }
-    .empty-state p { font-size: 14px; }
-    .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+    .empty-state p { font-size: 13px; }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .75s linear infinite;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-row { display: flex; align-items: center; gap: 10px; padding: 20px; color: var(--muted); font-size: 13px; }
-    #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 11px 18px; border-radius: 10px; font-size: 13px; z-index: 999; opacity: 0; transform: translateY(10px); transition: all .3s; max-width: 320px; }
+    .loading-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 20px; color: var(--muted); font-size: 13px;
+    }
+
+    /* ─── TOAST ──────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--surface); border: 1px solid var(--border2);
+      color: var(--text); padding: 11px 18px;
+      border-radius: 12px; font-size: 13px; z-index: 999;
+      opacity: 0; transform: translateY(8px);
+      transition: all .3s; max-width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+      display: flex; align-items: center; gap: 8px;
+    }
     #toast.show { opacity: 1; transform: translateY(0); }
-    #toast.success { border-color: var(--green); }
-    #toast.error   { border-color: var(--red); }
-    ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-    select.inp option { background: var(--card); }
-    .channel-selector { display: flex; gap: 6px; }
-    .ch-btn { padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all .15s; }
-    .ch-btn:hover, .ch-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+    #toast.success { border-color: rgba(16,185,129,.4); }
+    #toast.error   { border-color: rgba(239,68,68,.4); }
+    .toast-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    #toast.success .toast-dot { background: var(--green); }
+    #toast.error   .toast-dot { background: var(--red); }
+    #toast.info    .toast-dot { background: var(--accent); }
+    .toast-msg { flex: 1; }
+
+    /* ─── STREAM INFO ────────────────────────────── */
+    #streamInfo {
+      display: none;
+      background: rgba(16,185,129,.06);
+      border: 1px solid rgba(16,185,129,.2);
+      border-radius: 10px; padding: 10px 16px;
+      font-size: 11px; color: var(--muted2);
+      align-items: center; gap: 8px;
+    }
+    #streamInfo.visible { display: flex; }
+
+    /* ─── SKELETON ───────────────────────────────── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--card) 25%, var(--card2) 50%, var(--card) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
   </style>
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
+<!-- ═══════════════════════════════════════════════
+     LOGIN
+═══════════════════════════════════════════════ -->
 <div id="loginScreen">
-  <div class="login-box">
-    <h1>🎥 Monitoramento Florestal</h1>
-    <p>Digite a senha de acesso ao painel</p>
-    <div class="login-error" id="loginError"></div>
-    <div class="form-group">
-      <label>Senha</label>
-      <input class="inp" id="loginPassword" type="password" placeholder="••••••••" style="width:100%"
-             onkeydown="if(event.key==='Enter')doLogin()">
+  <div class="login-wrap">
+    <div class="login-brand">
+      <div class="login-logo">📹</div>
+      <h1>CamSec</h1>
+      <p>Monitoramento Florestal — IoT Hub</p>
     </div>
-    <button class="btn btn-accent" id="btnLogin" style="width:100%; margin-top:18px; justify-content:center" onclick="doLogin()">
-      Entrar
-    </button>
+    <div class="login-box">
+      <div class="login-error" id="loginError"></div>
+      <div class="form-group">
+        <label>Senha de Acesso</label>
+        <input class="inp" id="loginPassword" type="password"
+               placeholder="••••••••" style="width:100%"
+               onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn btn-primary" id="btnLogin"
+              style="width:100%; margin-top:8px; justify-content:center; padding:11px"
+              onclick="doLogin()">
+        Entrar no Painel
+      </button>
+    </div>
   </div>
 </div>
 
-<!-- HEADER -->
+<!-- ═══════════════════════════════════════════════
+     HEADER
+═══════════════════════════════════════════════ -->
 <header>
   <div class="logo">
-    <span>🎥</span>
-    <span>Monitoramento Florestal</span>
-    <span class="logo-badge">IoT Hub</span>
+    <div class="logo-icon">📹</div>
+    <span class="logo-text">CamSec</span>
+    <span class="logo-tag">IOT HUB</span>
+  </div>
+  <div class="header-center">
+    <div class="server-status" title="Status do servidor IoT Hub">
+      <div class="server-dot" id="serverDot"></div>
+      <span id="serverStatusText">Verificando...</span>
+    </div>
   </div>
   <div class="header-right">
-    <span class="user-pill" id="userPill"><span class="status-dot online"></span><span id="userEmail">—</span></span>
+    <span class="clock-badge" id="clockBadge">--:--:--</span>
+    <div class="user-chip" id="userChip">
+      <div class="user-avatar">OP</div>
+      <span>Operador</span>
+    </div>
     <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sair</button>
   </div>
 </header>
 
-<!-- LAYOUT -->
+<!-- ═══════════════════════════════════════════════
+     STATS BAR
+═══════════════════════════════════════════════ -->
+<div class="stats-bar" id="statsBar">
+  <div class="stat-card">
+    <div class="stat-icon green"><span>🟢</span></div>
+    <div class="stat-body">
+      <div class="stat-val green-txt" id="statOnline">0</div>
+      <div class="stat-lbl">Online</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue"><span>📹</span></div>
+    <div class="stat-body">
+      <div class="stat-val blue-txt" id="statStreams">0</div>
+      <div class="stat-lbl">Streams Ativos</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red"><span>🔔</span></div>
+    <div class="stat-body">
+      <div class="stat-val red-txt" id="statAlerts">0</div>
+      <div class="stat-lbl">Alertas (24h)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     LAYOUT
+═══════════════════════════════════════════════ -->
 <div class="layout">
 
-  <!-- SIDEBAR -->
+  <!-- ─── SIDEBAR ─────────────────────────────── -->
   <aside>
-    <div class="sidebar-header">
-      <span class="sidebar-title">Veículos</span>
-      <button class="btn btn-ghost btn-sm" onclick="loadDevices()" title="Recarregar da API">↻</button>
+    <div class="sidebar-top">
+      <div class="sidebar-head">
+        <span class="sidebar-title">Veículos</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="sidebar-count" id="vehicleCount">—</span>
+          <button class="btn btn-icon btn-sm" onclick="loadDevices()" title="Recarregar">↻</button>
+        </div>
+      </div>
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="vehicleSearch" placeholder="Buscar veículo..." oninput="filterVehicles()">
+      </div>
     </div>
     <div class="vehicle-list" id="vehicleList">
-      <div class="loading-row"><div class="spinner"></div> Carregando...</div>
+      <div class="loading-row"><div class="spinner"></div>Carregando...</div>
     </div>
-    <div class="sidebar-actions">
-      <button class="btn btn-ghost btn-sm" style="justify-content:center" onclick="openModal('addVehicleModal')">+ Adicionar por IMEI</button>
+    <div class="sidebar-bottom">
+      <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center"
+              onclick="openModal('addVehicleModal')">
+        + Adicionar Veículo por IMEI
+      </button>
     </div>
   </aside>
 
-  <!-- MAIN -->
+  <!-- ─── MAIN ────────────────────────────────── -->
   <main>
-    <div class="tabs">
-      <button class="tab active" data-tab="live" onclick="switchTab('live')">📹 Ao Vivo</button>
-      <button class="tab" data-tab="alerts" onclick="switchTab('alerts')">
-        🔔 Alertas <span class="tab-badge" id="alertTabBadge" style="display:none">0</span>
+    <div class="tabs-wrap">
+      <button class="tab active" data-tab="live" onclick="switchTab('live')">
+        <span>📹</span> Ao Vivo
       </button>
-      <button class="tab" data-tab="history" onclick="switchTab('history')">📁 Histórico</button>
+      <button class="tab" data-tab="alerts" onclick="switchTab('alerts')">
+        <span>🔔</span> Alertas
+        <span class="tab-badge" id="alertTabBadge" style="display:none">0</span>
+      </button>
+      <button class="tab" data-tab="history" onclick="switchTab('history')">
+        <span>📁</span> Histórico
+      </button>
     </div>
 
     <div class="tab-panels">
 
-      <!-- ── LIVE PANEL ── -->
+      <!-- ── LIVE ── -->
       <div class="panel active" id="panel-live">
-        <div class="no-vehicle-msg" id="liveEmpty">
-          <div class="big-icon">👈</div>
-          <div>Selecione um veículo na lista ao lado</div>
+
+        <div class="empty-state-big" id="liveEmpty">
+          <div class="esb-icon">🚛</div>
+          <div class="esb-title">Nenhum veículo selecionado</div>
+          <div class="esb-sub">Selecione um veículo na lista ao lado para iniciar o monitoramento</div>
         </div>
-        <div id="liveContent" style="display:none; flex-direction:column; gap:14px; flex:1">
+
+        <div id="liveContent" style="display:none;flex-direction:column;gap:16px;flex:1">
           <div class="live-header">
-            <div class="live-title">
-              <span id="liveIcon" style="font-size:22px">🚛</span>
-              <h2 id="liveName">—</h2>
-              <span id="liveOnlineBadge" class="online-badge off">offline</span>
+            <div class="live-title-wrap">
+              <div class="live-vehicle-icon" id="liveIcon">🚛</div>
+              <div>
+                <div class="live-vehicle-name" id="liveName">—</div>
+                <div class="live-vehicle-imei" id="liveImei">—</div>
+              </div>
+              <span class="live-status-badge off" id="liveOnlineBadge">offline</span>
             </div>
             <div class="live-controls">
-              <div class="channel-selector" id="channelSelector">
-                <!-- gerado dinamicamente -->
-              </div>
+              <div class="channel-selector" id="channelSelector"></div>
               <button class="btn btn-green" id="btnStartLive" onclick="startLive()">▶ Iniciar</button>
               <button class="btn btn-red" id="btnStopLive" onclick="stopLive()" style="display:none">⏹ Parar</button>
             </div>
           </div>
 
-          <div id="camGrid" class="cam-grid">
-            <!-- câmeras geradas dinamicamente -->
-          </div>
+          <div id="camGrid" class="cam-grid"></div>
 
-          <div class="stream-info" id="streamInfo">
-            📡 Conectado: <code id="streamUrlDisplay">—</code>
+          <div id="streamInfo">
+            <span style="color:var(--green)">●</span>
+            <span>Conectado:</span>
+            <code id="streamUrlDisplay">—</code>
           </div>
         </div>
       </div>
 
-      <!-- ── ALERTS PANEL ── -->
+      <!-- ── ALERTS ── -->
       <div class="panel" id="panel-alerts">
         <div class="panel-toolbar">
-          <h2>🔔 Alertas</h2>
+          <div class="panel-title">🔔 Alertas</div>
           <div class="filter-row">
             <button class="filter-btn active" onclick="filterAlerts('all',this)">Todos</button>
             <button class="filter-btn" onclick="filterAlerts('unread',this)">Não lidos</button>
             <button class="filter-btn" onclick="filterAlerts('critical',this)">Críticos</button>
-            <button class="btn btn-ghost btn-sm" onclick="fetchAlerts()" id="btnRefreshAlerts">🔄</button>
+            <button class="btn btn-icon btn-sm" onclick="fetchAlerts()" id="btnRefreshAlerts" title="Atualizar">↻</button>
           </div>
         </div>
         <div id="alertsContainer">
-          <div class="loading-row"><div class="spinner"></div> Carregando alertas...</div>
+          <div class="loading-row"><div class="spinner"></div>Carregando alertas...</div>
         </div>
       </div>
 
-      <!-- ── HISTORY PANEL ── -->
+      <!-- ── HISTORY ── -->
       <div class="panel" id="panel-history">
         <div class="panel-toolbar">
-          <h2>📁 Histórico de Vídeos</h2>
+          <div class="panel-title">📁 Histórico de Vídeos</div>
         </div>
-        <div id="histEmpty" style="color:var(--muted);font-size:13px">👈 Selecione um veículo para buscar o histórico.</div>
-        <div id="histContent" style="display:none; flex-direction:column; gap:14px">
+        <div id="histEmpty" style="color:var(--muted);font-size:13px">
+          <div class="empty-state">
+            <div class="e-icon">📁</div>
+            <p>Selecione um veículo para buscar o histórico.</p>
+          </div>
+        </div>
+        <div id="histContent" style="display:none;flex-direction:column;gap:14px">
           <div class="history-form">
-            <div>
-              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">De</label>
+            <div class="form-field">
+              <label>De</label>
               <input type="datetime-local" class="inp" id="histStart" style="width:190px">
             </div>
-            <div>
-              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Até</label>
+            <div class="form-field">
+              <label>Até</label>
               <input type="datetime-local" class="inp" id="histEnd" style="width:190px">
             </div>
-            <div>
-              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Canal</label>
-              <select class="inp" id="histChannel" style="width:140px">
+            <div class="form-field">
+              <label>Canal</label>
+              <select class="inp" id="histChannel" style="width:150px">
                 <option value="1">Canal 1 — Frontal</option>
                 <option value="2">Canal 2 — Interno</option>
                 <option value="3">Canal 3 — DMS</option>
               </select>
             </div>
-            <div style="align-self:flex-end">
-              <button class="btn btn-accent" onclick="loadHistory()">🔍 Buscar</button>
+            <div class="form-field" style="justify-content:flex-end">
+              <button class="btn btn-primary" onclick="loadHistory()">🔍 Buscar</button>
             </div>
           </div>
           <div id="historyList"></div>
@@ -319,17 +889,23 @@
   </main>
 </div><!-- /layout -->
 
-<!-- MODAL: ADD VEHICLE -->
+<!-- ═══════════════════════════════════════════════
+     MODAL: ADD VEHICLE
+═══════════════════════════════════════════════ -->
 <div class="modal-overlay" id="addVehicleModal">
   <div class="modal">
-    <h3>🚛 Adicionar Veículo por IMEI</h3>
+    <div class="modal-header">
+      <div class="modal-title">Adicionar Veículo</div>
+      <div class="modal-sub">Insira o IMEI do dispositivo JC400 instalado no veículo</div>
+    </div>
     <div class="form-group">
       <label>Nome do Veículo</label>
       <input class="inp" id="newVehicleName" placeholder="Ex: Harvester Florestal 01" style="width:100%">
     </div>
     <div class="form-group">
       <label>IMEI do Dispositivo JC400</label>
-      <input class="inp" id="newVehicleImei" placeholder="Ex: 862708042244652" style="width:100%; font-family:monospace">
+      <input class="inp" id="newVehicleImei" placeholder="Ex: 869058070009855"
+             style="width:100%; font-family:monospace">
       <div class="form-hint">Número de 15 dígitos — encontrado na etiqueta do equipamento</div>
     </div>
     <div class="form-group">
@@ -349,27 +925,35 @@
   </div>
 </div>
 
-<!-- MODAL: MEDIA VIEWER -->
+<!-- ═══════════════════════════════════════════════
+     MODAL: MEDIA VIEWER
+═══════════════════════════════════════════════ -->
 <div class="modal-overlay" id="mediaModal">
-  <div class="modal" style="max-width:600px;width:95vw">
-    <h3 id="mediaModalTitle">📸 Mídia do Evento</h3>
-    <div id="mediaModalBody" style="text-align:center"></div>
+  <div class="modal" style="max-width:620px;width:95vw">
+    <div class="modal-header">
+      <div class="modal-title" id="mediaModalTitle">Mídia do Evento</div>
+    </div>
+    <div id="mediaModalBody" style="text-align:center;border-radius:10px;overflow:hidden"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('mediaModal')">Fechar</button>
-      <a id="mediaDownloadLink" href="#" target="_blank" class="btn btn-accent" download>⬇ Baixar</a>
+      <a id="mediaDownloadLink" href="#" target="_blank" class="btn btn-primary" download>⬇ Baixar</a>
     </div>
   </div>
 </div>
 
-<div id="toast"></div>
+<!-- TOAST -->
+<div id="toast">
+  <div class="toast-dot"></div>
+  <div class="toast-msg" id="toastMsg"></div>
+</div>
 
 <script>
 /* ═══════════════════════════════════════════════
    CONFIGURAÇÃO IoT Hub
 ═══════════════════════════════════════════════ */
-const API_BASE        = '/api/iothub';   // proxy Netlify → http://178.105.90.63:9080
+const API_BASE        = '/api/iothub';
 const MEDIA_BASE      = location.origin + '/api/media'; // URL absoluta para Web Worker
-const ACCESS_PASSWORD = 'camsec2024';    // ← ALTERE ESTA SENHA
+const ACCESS_PASSWORD = 'camsec2024';
 
 /* ═══════════════════════════════════════════════
    ESTADO GLOBAL
@@ -380,13 +964,14 @@ let manualDevices = JSON.parse(
   localStorage.getItem('iot_devices') ||
   localStorage.getItem('th_manual_devices') || '[]'
 );
-let currentDevice  = null;
-let flvPlayers     = {};
-let activeChannels = [];
-let alertsData     = [];
-let alertFilter    = 'all';
-let alertTimer     = null;
+let currentDevice    = null;
+let flvPlayers       = {};
+let activeChannels   = [];
+let alertsData       = [];
+let alertFilter      = 'all';
+let alertTimer       = null;
 let selectedChannels = [1];
+let vehicleSearch    = '';
 
 /* ═══════════════════════════════════════════════
    INICIALIZAÇÃO
@@ -396,17 +981,53 @@ document.addEventListener('DOMContentLoaded', () => {
   const yesterday = new Date(now - 86400000);
   document.getElementById('histEnd').value   = toDatetimeLocal(now);
   document.getElementById('histStart').value = toDatetimeLocal(yesterday);
-
-  // Auto-login se autenticado nesta sessão
+  startClock();
   if (sessionStorage.getItem('iot_auth') === '1') loginSuccess();
 });
 
 function toDatetimeLocal(d) {
-  return d.toISOString().slice(0,16);
+  return d.toISOString().slice(0, 16);
+}
+
+/* ─── RELÓGIO ────────────────────────────────── */
+function startClock() {
+  function tick() {
+    const now = new Date();
+    document.getElementById('clockBadge').textContent = now.toLocaleTimeString('pt-BR');
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+/* ─── STATUS DO SERVIDOR ─────────────────────── */
+async function pingServer() {
+  const dot = document.getElementById('serverDot');
+  const txt = document.getElementById('serverStatusText');
+  try {
+    const res = await fetch(API_BASE + '/api/device/status?imei=test', { method: 'GET' });
+    if (res.status < 500) {
+      dot.className = 'server-dot ok';
+      txt.textContent = 'IoT Hub Online';
+    } else throw new Error();
+  } catch {
+    dot.className = 'server-dot err';
+    txt.textContent = 'Servidor Offline';
+  }
+}
+
+/* ─── STATS BAR ──────────────────────────────── */
+function updateStats() {
+  const online = allDevices().filter(d => d.onlineStatus === 1).length;
+  const streams = Object.keys(flvPlayers).length;
+  const alerts  = alertsData.filter(a => a.status === 0).length;
+  document.getElementById('statOnline').textContent  = online;
+  document.getElementById('statStreams').textContent = streams;
+  document.getElementById('statAlerts').textContent  = alertsData.length;
+  document.getElementById('vehicleCount').textContent = `${allDevices().length} veículo(s)`;
 }
 
 /* ═══════════════════════════════════════════════
-   AUTENTICAÇÃO (senha local)
+   AUTENTICAÇÃO
 ═══════════════════════════════════════════════ */
 function doLogin() {
   const password = document.getElementById('loginPassword').value;
@@ -418,11 +1039,13 @@ function doLogin() {
 
 function loginSuccess() {
   document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('userPill').classList.add('visible');
-  document.getElementById('userEmail').textContent = 'operador';
+  document.getElementById('userChip').classList.add('visible');
+  document.getElementById('statsBar').classList.add('visible');
   loadDevices();
   fetchAlerts();
+  pingServer();
   alertTimer = setInterval(fetchAlerts, 60000);
+  setInterval(pingServer, 30000);
 }
 
 function doLogout() {
@@ -430,7 +1053,8 @@ function doLogout() {
   sessionStorage.removeItem('iot_auth');
   stopAllStreams();
   document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('userPill').classList.remove('visible');
+  document.getElementById('userChip').classList.remove('visible');
+  document.getElementById('statsBar').classList.remove('visible');
   document.getElementById('loginPassword').value = '';
 }
 
@@ -441,16 +1065,17 @@ function showLoginError(msg) {
 }
 
 /* ═══════════════════════════════════════════════
-   CHAMADAS API (sem JWT — IoT Hub não exige auth)
+   API
 ═══════════════════════════════════════════════ */
 async function apiFetch(path, method = 'GET', body = null) {
-  const headers = { 'Content-Type': 'application/json' };
-  const opts = { method, headers };
+  const opts = { method };
   let url = API_BASE + path;
   if (method === 'GET' && body) {
     url += '?' + new URLSearchParams(body);
   } else if (body) {
-    opts.body = JSON.stringify(body);
+    // API JIMI espera form-urlencoded, não JSON
+    opts.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+    opts.body = new URLSearchParams(body);
   }
   const res = await fetch(url, opts);
   return res.json();
@@ -460,8 +1085,8 @@ async function apiFetch(path, method = 'GET', body = null) {
    DISPOSITIVOS
 ═══════════════════════════════════════════════ */
 async function loadDevices() {
-  document.getElementById('vehicleList').innerHTML = '<div class="loading-row"><div class="spinner"></div> Carregando...</div>';
-  // Atualiza status de cada dispositivo via API
+  document.getElementById('vehicleList').innerHTML =
+    '<div class="loading-row"><div class="spinner"></div>Carregando...</div>';
   for (const d of manualDevices) {
     try {
       const res = await apiFetch('/api/device/status', 'GET', { imei: d.imei });
@@ -473,38 +1098,52 @@ async function loadDevices() {
   }
   devices = [];
   renderVehicleList();
+  updateStats();
   if (manualDevices.length === 0) {
-    toast('Adicione veículos pelo IMEI abaixo', 'success');
+    toast('Adicione veículos pelo IMEI abaixo', 'info');
   } else {
     toast(`${manualDevices.length} veículo(s) carregado(s)`, 'success');
   }
 }
 
-function allDevices() {
-  return [...manualDevices];
+function allDevices() { return [...manualDevices]; }
+
+function filterVehicles() {
+  vehicleSearch = document.getElementById('vehicleSearch').value.toLowerCase();
+  renderVehicleList();
 }
 
 function renderVehicleList() {
-  const list = allDevices();
+  let list = allDevices();
+  if (vehicleSearch) {
+    list = list.filter(d =>
+      (d.deviceName||'').toLowerCase().includes(vehicleSearch) ||
+      d.imei.includes(vehicleSearch)
+    );
+  }
   const el = document.getElementById('vehicleList');
+  document.getElementById('vehicleCount').textContent = `${allDevices().length} veículo(s)`;
   if (!list.length) {
-    el.innerHTML = '<div class="empty-state" style="padding:24px 12px"><div class="e-icon">🚛</div><p style="font-size:12px">Nenhum veículo. Adicione pelo IMEI abaixo.</p></div>';
+    el.innerHTML = `<div class="empty-state" style="padding:24px 12px">
+      <div class="e-icon">🚛</div>
+      <p style="font-size:12px">${vehicleSearch ? 'Nenhum resultado.' : 'Nenhum veículo cadastrado.'}</p>
+    </div>`;
     return;
   }
   el.innerHTML = list.map((d, i) => {
+    const realIdx = allDevices().findIndex(x => x.imei === d.imei);
     const isActive = currentDevice?.imei === d.imei;
-    const statusLabel = d.onlineStatus === 1 ? 'online' : d.onlineStatus === 2 ? 'offline' : 'idle';
     const statusClass = d.onlineStatus === 1 ? 'on' : d.onlineStatus === 2 ? 'off' : 'idle';
     const icon = d.icon || '🌲';
     return `
-    <div class="vehicle-item ${isActive ? 'active' : ''}" onclick="selectDevice(${i})">
-      <div class="vehicle-icon">${icon}</div>
+    <div class="vehicle-item ${isActive ? 'active' : ''}" onclick="selectDevice(${realIdx})">
+      <div class="v-icon-wrap">${icon}</div>
       <div class="vehicle-info">
         <div class="vehicle-name">${d.deviceName || d.imei}</div>
         <div class="vehicle-sub">${d.imei}</div>
       </div>
-      <span class="online-badge ${statusClass}">${statusLabel}</span>
-      <button class="vehicle-del" onclick="removeManual(event,'${d.imei}')">✕</button>
+      <div class="status-pip ${statusClass}"></div>
+      <button class="v-del btn-sm" onclick="removeManual(event,'${d.imei}')">✕</button>
     </div>`;
   }).join('');
 }
@@ -517,9 +1156,9 @@ async function selectDevice(i) {
   renderVehicleList();
   showLiveVehicle();
   updateHistorySection();
-  // JC400 tem 2 canais; ajuste se necessário
   buildChannelSelector(2);
   buildCamGrid(2);
+  updateStats();
 }
 
 function addVehicleManual() {
@@ -532,6 +1171,7 @@ function addVehicleManual() {
   manualDevices.push({ imei, deviceName: name, icon, onlineStatus: 0 });
   localStorage.setItem('iot_devices', JSON.stringify(manualDevices));
   renderVehicleList();
+  updateStats();
   closeModal('addVehicleModal');
   document.getElementById('newVehicleName').value = '';
   document.getElementById('newVehicleImei').value = '';
@@ -544,6 +1184,7 @@ function removeManual(e, imei) {
   localStorage.setItem('iot_devices', JSON.stringify(manualDevices));
   if (currentDevice?.imei === imei) { currentDevice = null; showLiveEmpty(); }
   renderVehicleList();
+  updateStats();
 }
 
 /* ═══════════════════════════════════════════════
@@ -561,7 +1202,7 @@ function buildChannelSelector(count) {
 
 function toggleChannel(ch, btn) {
   if (selectedChannels.includes(ch)) {
-    if (selectedChannels.length === 1) return; // manter ao menos 1
+    if (selectedChannels.length === 1) return;
     selectedChannels = selectedChannels.filter(c => c !== ch);
     btn.classList.remove('active');
   } else {
@@ -578,15 +1219,21 @@ function buildCamGrid(count) {
     return `
     <div class="cam-card" id="camCard${ch}">
       <div class="cam-label">
-        ${labels[i]||'Câmera '+ch} (Canal ${ch})
-        <span class="live-pill" id="livePill${ch}">● AO VIVO</span>
+        <div class="cam-label-left">
+          <div class="cam-label-dot" id="camDot${ch}"></div>
+          <span>${labels[i]||'Câmera '+ch} — Canal ${ch}</span>
+        </div>
+        <span class="live-pill-text" id="livePill${ch}">● AO VIVO</span>
       </div>
       <div class="cam-video-wrap" id="camWrap${ch}">
         <div class="cam-placeholder" id="placeholder${ch}">
-          <div class="cam-icon">${ch===1?'📷':'ch'===2?'🎥':'👁'}</div>
-          <div>Clique em ▶ Iniciar para ver ao vivo</div>
+          <div class="cam-icon">${ch===1?'📷':ch===2?'🎥':'👁'}</div>
+          <div class="cam-hint">Clique em <strong>▶ Iniciar</strong> para ver ao vivo</div>
         </div>
         <video id="video${ch}" style="display:none" muted autoplay playsinline controls></video>
+        <div class="cam-overlay">
+          <button class="overlay-btn" onclick="toggleFullscreen(${ch})" title="Tela cheia">⛶</button>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -596,16 +1243,19 @@ function showLiveEmpty() {
   document.getElementById('liveEmpty').style.display = 'flex';
   document.getElementById('liveContent').style.display = 'none';
 }
+
 function showLiveVehicle() {
   document.getElementById('liveEmpty').style.display = 'none';
   const lc = document.getElementById('liveContent');
   lc.style.display = 'flex';
   document.getElementById('liveIcon').textContent = currentDevice.icon || '🌲';
   document.getElementById('liveName').textContent = currentDevice.deviceName || currentDevice.imei;
+  document.getElementById('liveImei').textContent = currentDevice.imei;
   const status = currentDevice.onlineStatus;
   const badge = document.getElementById('liveOnlineBadge');
-  badge.className = 'online-badge ' + (status===1?'on':status===2?'off':'idle');
-  badge.textContent = status===1?'online':status===2?'offline':'sem dados';
+  const cls = status===1?'on':status===2?'off':'idle';
+  badge.className = 'live-status-badge ' + cls;
+  badge.textContent = status===1?'● Online':status===2?'Offline':'Sem dados';
   document.getElementById('btnStartLive').style.display = '';
   document.getElementById('btnStopLive').style.display = 'none';
 }
@@ -616,21 +1266,18 @@ async function startLive() {
 
   const btn = document.getElementById('btnStartLive');
   btn.disabled = true;
-  btn.innerHTML = '<div class="spinner" style="border-top-color:#000"></div> Iniciando...';
+  btn.innerHTML = '<div class="spinner" style="border-top-color:#000;width:13px;height:13px"></div> Iniciando...';
 
   let anyStarted = false;
   for (const ch of selectedChannels) {
     try {
-      // Envia instrução para a câmera iniciar o RTMP
       await apiFetch('/api/device/sendInstruct', 'POST', {
         imei: currentDevice.imei,
         channel: ch,
         dataType: 0,
         streamType: 0,
       });
-      // Aguarda câmera iniciar o stream (3 segundos)
       await new Promise(r => setTimeout(r, 3000));
-      // Conecta ao FLV via proxy de mídia
       const flvUrl = `${MEDIA_BASE}/live/${currentDevice.imei}_${ch}.flv`;
       startFlvPlayer(ch, flvUrl);
       anyStarted = true;
@@ -645,6 +1292,7 @@ async function startLive() {
   if (anyStarted) {
     btn.style.display = 'none';
     document.getElementById('btnStopLive').style.display = '';
+    updateStats();
   }
 }
 
@@ -652,9 +1300,10 @@ function startFlvPlayer(channel, flvUrl) {
   if (!mpegts.isSupported()) { toast('Use o Chrome para streaming FLV', 'error'); return; }
   if (flvPlayers[channel]) { flvPlayers[channel].destroy(); delete flvPlayers[channel]; }
 
-  const videoEl = document.getElementById(`video${channel}`);
-  const placeholder = document.getElementById(`placeholder${channel}`);
-  const pill = document.getElementById(`livePill${channel}`);
+  const videoEl      = document.getElementById(`video${channel}`);
+  const placeholder  = document.getElementById(`placeholder${channel}`);
+  const pill         = document.getElementById(`livePill${channel}`);
+  const dot          = document.getElementById(`camDot${channel}`);
   if (!videoEl) return;
 
   placeholder.style.display = 'none';
@@ -670,17 +1319,33 @@ function startFlvPlayer(channel, flvUrl) {
 
   player.on(mpegts.Events.MEDIA_INFO, () => {
     pill?.classList.add('on');
-    document.getElementById('streamInfo').style.display = 'block';
+    dot?.classList.add('live');
+    document.getElementById('streamInfo').classList.add('visible');
     document.getElementById('streamUrlDisplay').textContent = flvUrl;
+    updateStats();
   });
   player.on(mpegts.Events.ERROR, (errType) => {
-    if (placeholder) { placeholder.style.display = 'flex'; placeholder.innerHTML = `<div class="cam-icon">❌</div><div>Falha no stream<br><small>${errType}</small></div>`; }
+    if (placeholder) {
+      placeholder.style.display = 'flex';
+      placeholder.innerHTML = `<div class="cam-icon">❌</div><div class="cam-hint">Falha no stream<br><small>${errType}</small></div>`;
+    }
     if (videoEl) videoEl.style.display = 'none';
     pill?.classList.remove('on');
+    dot?.classList.remove('live');
   });
 
   flvPlayers[channel] = player;
-  activeChannels.push(channel);
+  if (!activeChannels.includes(channel)) activeChannels.push(channel);
+}
+
+function toggleFullscreen(ch) {
+  const wrap = document.getElementById(`camWrap${ch}`);
+  if (!wrap) return;
+  if (!document.fullscreenElement) {
+    wrap.requestFullscreen?.();
+  } else {
+    document.exitFullscreen?.();
+  }
 }
 
 async function stopLive() {
@@ -698,20 +1363,23 @@ async function stopLive() {
   stopAllStreams();
   document.getElementById('btnStartLive').style.display = '';
   document.getElementById('btnStopLive').style.display = 'none';
-  document.getElementById('streamInfo').style.display = 'none';
+  document.getElementById('streamInfo').classList.remove('visible');
+  updateStats();
 }
 
 function stopAllStreams() {
   Object.entries(flvPlayers).forEach(([ch, player]) => {
     try { player.destroy(); } catch {}
-    const v = document.getElementById(`video${ch}`);
-    const p = document.getElementById(`placeholder${ch}`);
+    const v    = document.getElementById(`video${ch}`);
+    const p    = document.getElementById(`placeholder${ch}`);
     const pill = document.getElementById(`livePill${ch}`);
-    if (v) { v.src=''; v.style.display='none'; }
-    if (p) { p.style.display='flex'; }
+    const dot  = document.getElementById(`camDot${ch}`);
+    if (v)    { v.src = ''; v.style.display = 'none'; }
+    if (p)    { p.style.display = 'flex'; p.innerHTML = `<div class="cam-icon">${ch===1?'📷':ch===2?'🎥':'👁'}</div><div class="cam-hint">Clique em <strong>▶ Iniciar</strong> para ver ao vivo</div>`; }
     if (pill) pill.classList.remove('on');
+    if (dot)  dot.classList.remove('live');
   });
-  flvPlayers = {};
+  flvPlayers     = {};
   activeChannels = [];
 }
 
@@ -723,16 +1391,17 @@ async function fetchAlerts() {
   if (btn) btn.disabled = true;
   try {
     const now   = Date.now();
-    const start = now - 24 * 60 * 60 * 1000; // últimas 24 h
+    const start = now - 24 * 60 * 60 * 1000;
     const res = await apiFetch('/api/alarm/getAlarm', 'GET', {
       startTime: String(start),
       endTime:   String(now),
     });
-    if (Array.isArray(res.data))        alertsData = res.data;
-    else if (res.data?.list)            alertsData = res.data.list;
-    else if (res.data?.records)         alertsData = res.data.records;
-    else                                alertsData = [];
+    if (Array.isArray(res.data))   alertsData = res.data;
+    else if (res.data?.list)       alertsData = res.data.list;
+    else if (res.data?.records)    alertsData = res.data.records;
+    else                           alertsData = [];
     renderAlerts();
+    updateStats();
   } catch(e) {
     console.warn('[Alertas]', e.message);
   } finally {
@@ -761,16 +1430,19 @@ function renderAlerts() {
   if (alertFilter === 'critical') list = list.filter(a => alertMeta(a.type).level === 'critical');
 
   const unread = alertsData.filter(a => a.status === 0).length;
-  const badge = document.getElementById('alertTabBadge');
-  badge.textContent = unread;
+  const badge  = document.getElementById('alertTabBadge');
+  badge.textContent  = unread;
   badge.style.display = unread > 0 ? '' : 'none';
 
   if (!list.length) {
-    container.innerHTML = `<div class="empty-state"><div class="e-icon">🔔</div><p>Nenhum alerta${alertFilter!=='all'?' nesta categoria':''}.</p></div>`;
+    container.innerHTML = `<div class="empty-state">
+      <div class="e-icon">🔔</div>
+      <p>Nenhum alerta${alertFilter!=='all'?' nesta categoria':''}.</p>
+    </div>`;
     return;
   }
 
-  const devMap = Object.fromEntries(allDevices().map(d=>[d.imei, d]));
+  const devMap = Object.fromEntries(allDevices().map(d => [d.imei, d]));
 
   container.innerHTML = `<div class="alert-list">${list.map(a => {
     const aType = a.type || a.alarmType || '';
@@ -778,29 +1450,34 @@ function renderAlerts() {
     const name  = a.alertName || a.alarmName || aType || 'Alerta';
     const dev   = devMap[a.imei] || {};
     const rawTime = a.alertTime || a.alarmTime || a.time;
-    const time  = rawTime ? new Date(typeof rawTime === 'string' ? parseInt(rawTime) : rawTime).toLocaleString('pt-BR') : '—';
+    const time  = rawTime
+      ? new Date(typeof rawTime === 'string' ? parseInt(rawTime) : rawTime).toLocaleString('pt-BR')
+      : '—';
     const levelLabel = meta.level === 'critical' ? 'CRÍTICO' : meta.level === 'warning' ? 'ALERTA' : 'INFO';
     const attachHtml = (a.attachment||[]).map(att => {
       const isImg = att.mediaType === 0;
-      const thumb = att.storagePath ? `<img src="${att.storagePath}" onerror="this.parentNode.innerHTML='📷'" style="width:100%;height:100%;object-fit:cover">` : (isImg ? '📷' : '🎬');
+      const thumb = att.storagePath
+        ? `<img src="${att.storagePath}" onerror="this.parentNode.innerHTML='📷'" style="width:100%;height:100%;object-fit:cover">`
+        : (isImg ? '📷' : '🎬');
       return `<div class="attach-thumb" onclick="openMedia('${att.storagePath||''}','${att.fileName||''}',${att.mediaType})" title="${att.fileName||''}">${thumb}</div>`;
     }).join('');
     return `
-    <div class="alert-card ${a.status===0?'unread':''}">
-      <div class="alert-icon">${meta.icon}</div>
+    <div class="alert-card ${a.status===0?'unread':''} ${meta.level}">
+      <div class="alert-icon-wrap ${meta.level}">${meta.icon}</div>
       <div class="alert-body">
-        <div class="alert-title">${name}</div>
+        <div class="alert-name">${name}</div>
         <div class="alert-meta">
           <span>${dev.icon||'📡'} ${dev.deviceName||a.imei}</span>
           <span>🕐 ${time}</span>
           ${a.location ? `<span>📍 ${a.location}</span>` : ''}
-          ${a.firingStatus ? `<span>${a.firingStatus==='Start'?'🔴 Início':'🟢 Fim'}</span>` : ''}
+          ${a.firingStatus ? `<span>${a.firingStatus==='Start'?'🔴':'🟢'} ${a.firingStatus==='Start'?'Início':'Fim'}</span>` : ''}
         </div>
-        ${a.description ? `<div style="font-size:12px;color:var(--muted);margin-top:2px">${a.description}</div>` : ''}
+        ${a.description ? `<div class="alert-desc">${a.description}</div>` : ''}
         ${attachHtml ? `<div class="alert-attachments">${attachHtml}</div>` : ''}
       </div>
-      <div class="alert-actions">
-        <span class="alert-level level-${meta.level}">${levelLabel}</span>
+      <div class="alert-right">
+        <span class="level-badge ${meta.level}">${levelLabel}</span>
+        <div class="unread-dot"></div>
       </div>
     </div>`;
   }).join('')}</div>`;
@@ -817,8 +1494,8 @@ function openMedia(url, fileName, type) {
   if (!url) { toast('URL de mídia não disponível', 'error'); return; }
   const isImg = type === 0;
   const body = isImg
-    ? `<img src="${url}" style="max-width:100%;border-radius:8px" onerror="this.alt='Não foi possível carregar a imagem'">`
-    : `<video src="${url}" controls style="max-width:100%;border-radius:8px"></video>`;
+    ? `<img src="${url}" style="max-width:100%;border-radius:10px" onerror="this.alt='Não foi possível carregar a imagem'">`
+    : `<video src="${url}" controls style="max-width:100%;border-radius:10px;background:#000"></video>`;
   document.getElementById('mediaModalTitle').textContent = isImg ? '📸 Foto do Evento' : '🎬 Vídeo do Evento';
   document.getElementById('mediaModalBody').innerHTML = body;
   document.getElementById('mediaDownloadLink').href = url;
@@ -830,9 +1507,11 @@ function openMedia(url, fileName, type) {
    HISTÓRICO
 ═══════════════════════════════════════════════ */
 function updateHistorySection() {
-  document.getElementById('histEmpty').style.display = currentDevice ? 'none' : 'block';
+  document.getElementById('histEmpty').style.display   = currentDevice ? 'none' : 'block';
   document.getElementById('histContent').style.display = currentDevice ? 'flex' : 'none';
-  if (currentDevice) document.getElementById('historyList').innerHTML = '<div class="empty-state"><div class="e-icon">📁</div><p>Selecione intervalo e clique em Buscar.</p></div>';
+  if (currentDevice)
+    document.getElementById('historyList').innerHTML =
+      '<div class="empty-state"><div class="e-icon">📁</div><p>Selecione intervalo e clique em Buscar.</p></div>';
 }
 
 async function loadHistory() {
@@ -844,15 +1523,15 @@ async function loadHistory() {
 
   const startMs = new Date(startVal).getTime().toString();
   const endMs   = new Date(endVal).getTime().toString();
-  const list = document.getElementById('historyList');
-  list.innerHTML = '<div class="loading-row"><div class="spinner"></div> Buscando arquivos...</div>';
+  const list    = document.getElementById('historyList');
+  list.innerHTML = '<div class="loading-row"><div class="spinner"></div>Buscando arquivos...</div>';
 
   try {
     const res = await apiFetch('/api/instruction/remote/list', 'POST', {
       imei: currentDevice.imei,
       channel,
       startTime: startMs,
-      endTime: endMs,
+      endTime:   endMs,
     });
     const files = Array.isArray(res.data) ? res.data : (res.data?.list || []);
     if (!files.length) {
@@ -866,7 +1545,7 @@ async function loadHistory() {
       const time = f.startTime ? new Date(parseInt(f.startTime)).toLocaleString('pt-BR') : '';
       return `
       <div class="file-card">
-        <div class="file-icon">🎬</div>
+        <div class="file-icon-wrap">🎬</div>
         <div class="file-info">
           <div class="file-name">${name}</div>
           <div class="file-meta">${[time, dur, size].filter(Boolean).join(' · ')}</div>
@@ -894,7 +1573,8 @@ async function playbackFile(fileName) {
     await new Promise(r => setTimeout(r, 2000));
     const flvUrl = `${MEDIA_BASE}/live/${currentDevice.imei}_1.flv`;
     switchTab('live');
-    if (!document.getElementById('liveContent').style.display || document.getElementById('liveContent').style.display === 'none') showLiveVehicle();
+    if (!document.getElementById('liveContent').style.display ||
+        document.getElementById('liveContent').style.display === 'none') showLiveVehicle();
     startFlvPlayer(1, flvUrl);
     document.getElementById('btnStopLive').style.display = '';
     toast('Playback iniciado no Canal 1', 'success');
@@ -924,12 +1604,14 @@ function switchTab(name) {
   if (name === 'history') updateHistorySection();
 }
 
-function openModal(id) { document.getElementById(id).classList.add('open'); }
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if(e.target===o) o.classList.remove('open'); }));
-
+document.querySelectorAll('.modal-overlay').forEach(o =>
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); })
+);
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(o => o.classList.remove('open'));
   if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') doLogin();
 });
 
@@ -937,12 +1619,13 @@ document.addEventListener('keydown', e => {
    TOAST
 ═══════════════════════════════════════════════ */
 let _toastTimer;
-function toast(msg, type='info') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
+function toast(msg, type = 'info') {
+  const el  = document.getElementById('toast');
+  const txt = document.getElementById('toastMsg');
+  txt.textContent = msg;
   el.className = `show ${type}`;
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => el.className = '', 3500);
+  _toastTimer = setTimeout(() => { el.className = ''; }, 3500);
 }
 </script>
 </body>
