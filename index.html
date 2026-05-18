@@ -867,6 +867,8 @@
           <div class="panel-title">🔔 Alertas</div>
           <div class="filter-row">
             <button class="filter-btn active" onclick="filterAlerts('all',this)">Todos</button>
+            <button class="filter-btn" onclick="filterAlerts('dms',this)">👁 DMS</button>
+            <button class="filter-btn" onclick="filterAlerts('main',this)">📷 Principal</button>
             <button class="filter-btn" onclick="filterAlerts('unread',this)">Não lidos</button>
             <button class="filter-btn" onclick="filterAlerts('critical',this)">Críticos</button>
             <button class="btn btn-icon btn-sm" onclick="fetchAlerts()" id="btnRefreshAlerts" title="Atualizar">↻</button>
@@ -1536,18 +1538,26 @@ async function fetchAlerts() {
           try {
             const outer = JSON.parse(item.alarmMsg);
             const msg   = outer.msg || {};
+            // Extrair canal do nome do arquivo: EVENT_IMEI_CHANNELID_...
+            const firstFile = (msg.file || '').split(',')[0].trim();
+            const chMatch   = firstFile.match(/EVENT_\d+_(\d+)_/);
+            const channel   = chMatch ? chMatch[1] : '00000000';
+            const isDMS     = channel === '00000001';
+
             return {
               imei:       outer.imei || msg.deviceImei || imei,
               type:       String(msg.alertType || ''),
               alertType:  msg.alertType,
               alarmTime:  msg.alarmTime || outer.gateTime,
               gateTime:   outer.gateTime,
-              file:       msg.file || '',       // nome(s) do arquivo no cartão
+              file:       msg.file || '',
+              channel,
+              isDMS,
               lat:        msg.lat,
               lng:        msg.lng,
               gpsSpeed:   msg.gpsSpeed,
               voltage:    msg.voltage,
-              status:     0,                    // não lido
+              status:     0,
             };
           } catch { return null; }
         }).filter(Boolean);
@@ -1607,6 +1617,8 @@ function renderAlerts() {
   let list = [...alertsData];
   if (alertFilter === 'unread')   list = list.filter(a => a.status === 0);
   if (alertFilter === 'critical') list = list.filter(a => alertMeta(a).level === 'critical');
+  if (alertFilter === 'dms')      list = list.filter(a => a.isDMS);
+  if (alertFilter === 'main')     list = list.filter(a => !a.isDMS);
 
   const unread = alertsData.filter(a => a.status === 0).length;
   const badge  = document.getElementById('alertTabBadge');
@@ -1625,35 +1637,54 @@ function renderAlerts() {
 
   container.innerHTML = `<div class="alert-list">${list.map(a => {
     const meta  = alertMeta(a);
-    const name  = meta.label || a.alertName || a.alarmName || a.type || 'Alerta';
     const dev   = devMap[a.imei] || {};
-    const rawTime = a.alarmTime || a.alertTime || a.time;
-    const time  = jimiTimeToLocal(rawTime);
+    const time  = jimiTimeToLocal(a.alarmTime || a.alertTime || a.time);
     const levelLabel = meta.level === 'critical' ? 'CRÍTICO' : meta.level === 'warning' ? 'ALERTA' : 'INFO';
 
-    // Descrição do tipo de alerta
-    const desc = meta.desc || '';
+    // Label: DMS recebe nome específico independente do alertType
+    const name = a.isDMS
+      ? '👁 Evento DMS — Câmera de Monitoramento'
+      : (meta.label || a.type || 'Alerta');
 
-    // Arquivos de vídeo no cartão de memória
+    // Descrição
+    const desc = a.isDMS
+      ? 'Evento registrado pela câmera DMS (monitoramento interno do motorista). Canal 1.'
+      : (meta.desc || '');
+
+    // Badge de canal
+    const channelBadge = a.isDMS
+      ? `<span style="font-size:10px;background:rgba(99,102,241,.2);color:#a5b4fc;
+           padding:1px 7px;border-radius:4px;font-weight:700">DMS · Canal 1</span>`
+      : `<span style="font-size:10px;background:rgba(59,130,246,.15);color:#93c5fd;
+           padding:1px 7px;border-radius:4px;font-weight:700">Principal · Canal 0</span>`;
+
+    // Arquivos de vídeo — label baseado no tipo (I=interior, F=frontal) e canal
     const files = a.file ? a.file.split(',').map(f => f.trim()).filter(Boolean) : [];
     const filesHtml = files.map(f => {
-      const isInner = f.includes('_I_');
-      const label   = isInner ? '🎥 Câmera Interna' : '📷 Câmera Externa';
-      return `<button class="btn btn-sm" style="font-size:11px;padding:4px 10px;gap:4px"
+      const isInterior = f.includes('_I_');
+      const isDmsFile  = f.match(/EVENT_\d+_00000001_/);
+      let label;
+      if (isDmsFile)       label = '👁 DMS';
+      else if (isInterior) label = '🎥 Interior';
+      else                 label = '📷 Frontal';
+      return `<button class="btn btn-sm" style="font-size:11px;padding:4px 10px"
         onclick="openEventVideo('${f}','${a.imei}','${a.alarmTime}')" title="${f}">${label}</button>`;
     }).join('');
 
-    // Coordenadas GPS
+    // GPS
     const gpsHtml = (a.lat && a.lng)
-      ? `<span>📍 <a href="https://maps.google.com/?q=${a.lat},${a.lng}" target="_blank" style="color:var(--accent)">${a.lat.toFixed(5)}, ${a.lng.toFixed(5)}</a></span>`
+      ? `<span>📍 <a href="https://maps.google.com/?q=${a.lat},${a.lng}" target="_blank"
+           style="color:var(--accent)">${a.lat.toFixed(5)}, ${a.lng.toFixed(5)}</a></span>`
       : '';
     const speedHtml = (a.gpsSpeed > 0) ? `<span>🚗 ${a.gpsSpeed} km/h</span>` : '';
 
     return `
     <div class="alert-card ${a.status===0?'unread':''} ${meta.level}">
-      <div class="alert-icon-wrap ${meta.level}">${meta.icon}</div>
+      <div class="alert-icon-wrap ${meta.level}">${a.isDMS ? '👁' : meta.icon}</div>
       <div class="alert-body">
-        <div class="alert-name">${name}</div>
+        <div class="alert-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          ${name} ${channelBadge}
+        </div>
         <div class="alert-meta">
           <span>${dev.icon||'📡'} ${dev.deviceName||a.imei}</span>
           <span>🕐 ${time}</span>
