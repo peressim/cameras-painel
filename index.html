@@ -863,15 +863,21 @@
 
       <!-- ── ALERTS ── -->
       <div class="panel" id="panel-alerts">
-        <div class="panel-toolbar">
+        <div class="panel-toolbar" style="flex-wrap:wrap;gap:10px">
           <div class="panel-title">🔔 Alertas</div>
-          <div class="filter-row">
+          <div class="filter-row" style="flex-wrap:wrap;gap:5px">
+            <input type="date" class="inp" id="alertDateStart" style="width:140px;font-size:12px;padding:4px 8px"
+              title="Data inicial">
+            <input type="date" class="inp" id="alertDateEnd" style="width:140px;font-size:12px;padding:4px 8px"
+              title="Data final">
+            <button class="btn btn-sm btn-primary" onclick="fetchAlerts()" id="btnRefreshAlerts">🔍 Buscar</button>
+          </div>
+          <div class="filter-row" style="flex-wrap:wrap;gap:5px">
             <button class="filter-btn active" onclick="filterAlerts('all',this)">Todos</button>
             <button class="filter-btn" onclick="filterAlerts('dms',this)">👁 DMS</button>
             <button class="filter-btn" onclick="filterAlerts('main',this)">📷 Principal</button>
             <button class="filter-btn" onclick="filterAlerts('unread',this)">Não lidos</button>
             <button class="filter-btn" onclick="filterAlerts('critical',this)">Críticos</button>
-            <button class="btn btn-icon btn-sm" onclick="fetchAlerts()" id="btnRefreshAlerts" title="Atualizar">↻</button>
           </div>
         </div>
         <div id="alertsContainer">
@@ -1052,7 +1058,20 @@ const TZ              = 'America/Sao_Paulo'; // GMT-3
 
 // Formata Date → string "YYYY-MM-DD HH:mm:ss" no fuso GMT-3 (para API JIMI)
 function fmtGMT3(d) {
-  return d.toLocaleString('sv-SE', { timeZone: TZ }).replace('T', ' ').slice(0, 19);
+  // Subtrai 3h do UTC para obter representação GMT-3
+  return new Date(d.getTime() - 3 * 3600000)
+    .toISOString().slice(0, 19).replace('T', ' ');
+}
+
+// Preenche os campos de data dos alertas com um intervalo padrão
+function initAlertDates(daysBack = 30) {
+  const now   = new Date();
+  const start = new Date(now - daysBack * 86400000);
+  const toInput = d => new Date(d.getTime() - 3*3600000).toISOString().slice(0,10);
+  const s = document.getElementById('alertDateStart');
+  const e = document.getElementById('alertDateEnd');
+  if (s && !s.value) s.value = toInput(start);
+  if (e && !e.value) e.value = toInput(now);
 }
 
 // Converte string da API JIMI (assumida em GMT-3) → string legível pt-BR
@@ -1218,16 +1237,40 @@ async function refreshDeviceStatus() {
       if (res.code === 0 && res.data) {
         const data = Array.isArray(res.data) ? res.data[0] : res.data;
         if (data) {
-          // JIMI retorna onlineStatus: 0=desconhecido, 1=online, 2=offline
-          // ou powerStatus/accStatus como indicadores alternativos
           const status = data.onlineStatus ?? data.powerStatus ?? data.accStatus;
           if (status !== undefined) d.onlineStatus = Number(status);
+          // Guardar última vez que veio resposta da API e o raw data
+          d.lastChecked = new Date();
+          d.statusRaw   = data;
+          // Se online, atualizar lastSeen
+          if (d.onlineStatus === 1) d.lastSeen = new Date();
         }
+      } else if (res.code !== 0) {
+        // API retornou erro — câmera offline ou desconhecida
+        d.onlineStatus = 2;
+        d.lastChecked  = new Date();
       }
     } catch {}
   }
   renderVehicleList();
   updateStats();
+  // Atualizar badge de status no painel live
+  if (currentDevice) {
+    const d = manualDevices.find(x => x.imei === currentDevice.imei);
+    if (d) updateLiveStatusBadge(d);
+  }
+}
+
+function updateLiveStatusBadge(d) {
+  const badge = document.getElementById('liveOnlineBadge');
+  if (!badge) return;
+  const isOnline = d.onlineStatus === 1;
+  badge.className = `live-status-badge ${isOnline ? 'on' : 'off'}`;
+  const lastSeen = d.lastSeen
+    ? d.lastSeen.toLocaleString('pt-BR', { timeZone: TZ })
+    : '—';
+  badge.textContent = isOnline ? '● online' : `● offline`;
+  badge.title = isOnline ? 'Câmera conectada' : `Último contato: ${lastSeen}`;
 }
 
 function allDevices() { return [...manualDevices]; }
@@ -1257,14 +1300,23 @@ function renderVehicleList() {
   el.innerHTML = list.map((d, i) => {
     const realIdx = allDevices().findIndex(x => x.imei === d.imei);
     const isActive = currentDevice?.imei === d.imei;
-    const statusClass = d.onlineStatus === 1 ? 'on' : d.onlineStatus === 2 ? 'off' : 'idle';
+    const statusClass  = d.onlineStatus === 1 ? 'on' : d.onlineStatus === 2 ? 'off' : 'idle';
+    const statusLabel  = d.onlineStatus === 1 ? 'Online' : d.onlineStatus === 2 ? 'Offline' : 'Verificando...';
+    const lastSeenStr  = d.lastSeen
+      ? d.lastSeen.toLocaleString('pt-BR', { timeZone: TZ, hour:'2-digit', minute:'2-digit' })
+      : null;
+    const subLine = d.onlineStatus === 1
+      ? `<span style="color:var(--green);font-size:10px">● ${statusLabel}</span>`
+      : lastSeenStr
+        ? `<span style="color:var(--muted);font-size:10px">● Offline · visto ${lastSeenStr}</span>`
+        : `<span style="color:var(--muted);font-size:10px">● ${statusLabel}</span>`;
     const icon = d.icon || '🌲';
     return `
     <div class="vehicle-item ${isActive ? 'active' : ''}" onclick="selectDevice(${realIdx})">
       <div class="v-icon-wrap">${icon}</div>
       <div class="vehicle-info">
         <div class="vehicle-name">${d.deviceName || d.imei}</div>
-        <div class="vehicle-sub">${d.imei}</div>
+        ${subLine}
       </div>
       <div class="status-pip ${statusClass}"></div>
       <button class="v-del btn-sm" onclick="removeManual(event,'${d.imei}')">✕</button>
@@ -1514,9 +1566,12 @@ async function fetchAlerts() {
   const btn = document.getElementById('btnRefreshAlerts');
   if (btn) btn.disabled = true;
   try {
-    // JIMI API exige datas no formato "YYYY-MM-DD HH:mm:ss" no fuso GMT-3
-    const now   = new Date();
-    const start = new Date(now - 7 * 24 * 60 * 60 * 1000); // últimos 7 dias
+    // Usar datas dos inputs (ou fallback 30 dias)
+    initAlertDates(30);
+    const startInput = document.getElementById('alertDateStart')?.value;
+    const endInput   = document.getElementById('alertDateEnd')?.value;
+    const start = startInput ? new Date(startInput + 'T00:00:00-03:00') : new Date(Date.now() - 30*86400000);
+    const now   = endInput   ? new Date(endInput   + 'T23:59:59-03:00') : new Date();
 
     const allImeis = allDevices().map(d => d.imei);
     if (!allImeis.length) { renderAlerts(); return; }
@@ -1901,6 +1956,7 @@ function switchTab(name) {
   document.getElementById(`panel-${name}`).classList.add('active');
   if (name === 'history')  updateHistorySection();
   if (name === 'terminal') refreshTerminalDevices();
+  if (name === 'alerts')   initAlertDates(30);
 }
 
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
