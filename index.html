@@ -1580,14 +1580,14 @@ async function fetchAlerts() {
     for (const imei of allImeis) {
       try {
         const res = await apiFetch('/api/alarm/getAlarm', 'GET', {
-          token:     API_TOKEN,
-          imei,
-          startTime: fmtGMT3(start),
-          endTime:   fmtGMT3(now),
-          pageNo:    1,
-          pageSize:  100,
+          token:      API_TOKEN,
+          deviceImei: imei,
+          startTime:  fmtGMT3(start),
+          endTime:    fmtGMT3(now),
+          pageNo:     1,
+          pageSize:   100,
         });
-        if (!Array.isArray(res.data)) continue;
+        if (!Array.isArray(res.data) || !res.data.length) continue;
         // alarmMsg é uma string JSON aninhada — precisamos fazer JSON.parse()
         const parsed = res.data.map(item => {
           try {
@@ -1603,7 +1603,7 @@ async function fetchAlerts() {
               imei:       outer.imei || msg.deviceImei || imei,
               type:       String(msg.alertType || ''),
               alertType:  msg.alertType,
-              alarmTime:  msg.alarmTime || outer.gateTime,
+              alarmTime:  item.alarmTime || msg.alarmTime || outer.gateTime,
               gateTime:   outer.gateTime,
               file:       msg.file || '',
               channel,
