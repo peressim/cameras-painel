@@ -967,14 +967,13 @@
             <div>
               <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Comandos Rápidos</div>
               <div class="terminal-presets">
-                <button class="preset-btn" onclick="fillPreset('128','128','RTMP,ON,INOUT')">▶ Live ON</button>
-                <button class="preset-btn" onclick="fillPreset('128','128','RTMP,OFF')">⏹ Live OFF</button>
-                <button class="preset-btn" onclick="fillPreset('128','128','PARAM')">📋 Parâmetros</button>
-                <button class="preset-btn" onclick="fillPreset('128','128','REBOOT')">🔄 Reboot</button>
-                <button class="preset-btn" onclick="fillPreset('-128','normalIns','RSERVICE,RTMP,ON,rtmp://178.105.90.63:1935/live')">📡 RSERVICE 1935</button>
-                <button class="preset-btn" onclick="fillPreset('-128','normalIns','CONNECT')">🔌 CONNECT</button>
-                <button class="preset-btn" onclick="fillPreset('128','128','HVIDEO,2026_05_10_00_00_00,1')">🎬 HVIDEO</button>
-                <button class="preset-btn" onclick="fillPreset('-128','normalIns','JMLIVE,ON,0,0,0')">📹 JMLIVE</button>
+                <button class="preset-btn" onclick="fillPreset('128','1','RTMP,ON,INOUT')">▶ Live ON</button>
+                <button class="preset-btn" onclick="fillPreset('128','1','RTMP,OFF')">⏹ Live OFF</button>
+                <button class="preset-btn" onclick="fillPreset('128','1','PARAM')">📋 Parâmetros</button>
+                <button class="preset-btn" onclick="fillPreset('128','1','REBOOT')">🔄 Reboot</button>
+                <button class="preset-btn" onclick="fillPreset('-128','2','RSERVICE,1,rtmp://178.105.90.63:1935/live/862798051736938')">📡 RSERVICE</button>
+                <button class="preset-btn" onclick="fillPreset('128','1','HVIDEO,0,178.105.90.63,1935')">🎬 HVIDEO</button>
+                <button class="preset-btn" onclick="fillPreset('128','1','JMLIVE,ON,0,0,0')">📹 JMLIVE</button>
               </div>
             </div>
           </div>
@@ -1231,22 +1230,27 @@ async function refreshDeviceStatus() {
   for (const d of manualDevices) {
     try {
       const res = await apiFetch('/api/device/status', 'GET', {
-        token: API_TOKEN,
-        imei:  d.imei,
+        token:      API_TOKEN,
+        deviceImei: d.imei,
       });
       if (res.code === 0 && res.data) {
         const data = Array.isArray(res.data) ? res.data[0] : res.data;
         if (data) {
-          const status = data.onlineStatus ?? data.powerStatus ?? data.accStatus;
-          if (status !== undefined) d.onlineStatus = Number(status);
-          // Guardar última vez que veio resposta da API e o raw data
           d.lastChecked = new Date();
           d.statusRaw   = data;
-          // Se online, atualizar lastSeen
-          if (d.onlineStatus === 1) d.lastSeen = new Date();
+          // Determinar online/offline pelo tempo do último heartbeat (campo "time" é UTC)
+          // Se o último heartbeat foi há menos de 2 minutos → online
+          if (data.time) {
+            const lastHb = new Date(data.time.replace(' ', 'T') + 'Z'); // tratar como UTC
+            const ageMs  = Date.now() - lastHb.getTime();
+            d.onlineStatus = ageMs < 2 * 60 * 1000 ? 1 : 2; // 2 minutos
+            if (d.onlineStatus === 1) d.lastSeen = new Date();
+            else if (!d.lastSeen) d.lastSeen = lastHb; // primeiro offline: usar tempo da API
+          } else {
+            d.onlineStatus = 2;
+          }
         }
       } else if (res.code !== 0) {
-        // API retornou erro — câmera offline ou desconhecida
         d.onlineStatus = 2;
         d.lastChecked  = new Date();
       }
@@ -1834,10 +1838,10 @@ async function requestVideoFromCamera(imei, cmd, btn) {
       token:        API_TOKEN,
       deviceImei:   imei,
       proNo:        128,
-      cmdType:      128,
+      cmdType:      1,
       cmdContent:   cmd,
-      serverFlagId: 1,
-      platform:     0,
+      serverFlagId: 93,
+      platform:     'jimi',
       timeOut:      60,
       requestId:    'hvideo_' + Date.now(),
     });
@@ -2046,8 +2050,8 @@ async function sendTerminalCmd() {
       proNo:        proNo,
       cmdType:      cmdType,
       cmdContent:   cmd,
-      serverFlagId: 1,
-      platform:     0,
+      serverFlagId: 93,
+      platform:     'jimi',
       timeOut:      timeout,
       requestId:    reqId,
     });
@@ -2059,8 +2063,8 @@ async function sendTerminalCmd() {
 
     if (code == 100 && content.includes('OK')) {
       termLog('recv', `✓ code=${code}${msgText}`);
-    } else if (code == 600) {
-      termLog('recv', `📥 code=600 — Offline, comando armazenado${msgText}`);
+    } else if (code == 300 || code == 600) {
+      termLog('recv', `📥 code=${code} — Offline, comando enfileirado${msgText}`);
     } else if (code == 302) {
       termLog('recv', `⏳ code=302 — Câmera ocupada${msgText}`);
     } else if (code == 100) {
